@@ -1115,6 +1115,14 @@
   </div>
 </div>
 
+<script>
+  // 네이버 지도 스크립트가 로드되기 전에 미리 정의해둬야 인증 실패 시 실제로 잡힘
+  window.navermap_authFailure = function(){
+    console.error('네이버 지도 인증 실패 - Client ID/등록된 URL을 확인해줘');
+    const mapEl = document.getElementById('map');
+    if(mapEl) mapEl.innerHTML = '<div style="padding:40px 20px; text-align:center; color:#767C8A; font-size:0.85rem; line-height:1.7;">지도 인증에 실패했어 😥<br>네이버 콘솔에 등록한 Web 서비스 URL이<br>지금 이 주소랑 정확히 맞는지 확인해줘</div>';
+  };
+</script>
 <script src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=dlcc7tf129"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
 <script type="module">
