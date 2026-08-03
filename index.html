@@ -1634,8 +1634,14 @@ function enterRoom(){
   showScreen('app');
   $('hRoomCode').textContent = roomCode;
   $('roomLoading').classList.remove('hide');
-  if(!map) initMap();
-  setTimeout(()=> mapResize(), 250);
+  if(!map){
+    // 화면이 막 display:none에서 풀린 시점이라 컨테이너 크기가 아직 0일 수 있음 →
+    // 레이아웃이 실제로 반영된 다음 프레임에 지도를 생성해야 크기 0으로 고정되는 걸 막을 수 있음
+    requestAnimationFrame(()=> requestAnimationFrame(()=>{ if(!map) initMap(); }));
+  } else {
+    mapResize();
+  }
+  setTimeout(()=> mapResize(), 300);
 
   if(unsubRoom) unsubRoom();
   const rRef = ref(db, 'rooms/'+roomCode);
@@ -2451,7 +2457,13 @@ function leaveRoom(){
 /* ================= map init (네이버 지도) ================= */
 function mapResize(){
   if(!map) return;
-  try{ naver.maps.Event.trigger(map, 'resize'); }catch(e){}
+  try{
+    const el = $('map');
+    if(el && el.clientWidth > 0 && el.clientHeight > 0){
+      map.setSize(new naver.maps.Size(el.clientWidth, el.clientHeight));
+    }
+    naver.maps.Event.trigger(map, 'resize');
+  }catch(e){ console.warn('mapResize 실패', e); }
 }
 function addMapControlButton(id, emoji, title, position, onClick){
   const html = `<div style="margin:8px;"><button id="${id}" class="locate-btn" title="${title}">${emoji}</button></div>`;
