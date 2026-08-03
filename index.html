@@ -15,11 +15,15 @@
 <!-- 카카오톡/문자로 링크 보낼 때 뜨는 미리보기 카드 -->
 <meta property="og:title" content="어디가지?">
 <meta property="og:description" content="친구들끼리 어디 갈지 지도에 핀 찍고 투표해서 정하자 🫶">
-<meta property="og:image" content="icon-512.png">
+<meta property="og:image" content="https://feelrun-ahn.github.io/-/feature_graphic.png">
+<meta property="og:image:width" content="1024">
+<meta property="og:image:height" content="500">
+<meta property="og:url" content="https://feelrun-ahn.github.io/-/">
 <meta property="og:type" content="website">
-<meta name="twitter:card" content="summary">
+<meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="어디가지?">
 <meta name="twitter:description" content="친구들끼리 어디 갈지 지도에 핀 찍고 투표해서 정하자 🫶">
+<meta name="twitter:image" content="https://feelrun-ahn.github.io/-/feature_graphic.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
@@ -64,70 +68,53 @@
   /* ===== 시작 스플래시: 지도에 핀들이 통통 튀며 꽂히는 연출 ===== */
   #splashScreen{
     position:fixed; inset:0; z-index:9999;
-    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:22px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:0;
     background:var(--bg);
     transition:opacity 0.5s ease;
   }
   #splashScreen.fade-out{ opacity:0; pointer-events:none; }
 
-  .splash-map{
-    position:relative; width:250px; height:250px; border-radius:46px;
-    background:var(--bg2); border:1px solid var(--border); overflow:hidden;
-    box-shadow:0 26px 60px rgba(91,91,214,0.32);
-    opacity:0; transform:scale(0.9);
-    animation:mapIn 0.5s cubic-bezier(0.22,1,0.36,1) forwards;
+  .splash-stage{
+    position:relative; width:250px; height:250px;
+    opacity:0; transform:scale(0.86);
+    animation:stageIn 0.45s cubic-bezier(0.22,1,0.36,1) forwards;
   }
-  @keyframes mapIn{ to{ opacity:1; transform:scale(1); } }
+  @keyframes stageIn{ to{ opacity:1; transform:scale(1); } }
 
-  .sm-block{ position:absolute; }
-  .sm-block.bA{
-    width:100%; height:100%; top:0; left:0;
-    background:var(--accent-soft);
-    clip-path:polygon(28% 0%, 62% 0%, 20% 46%, 0% 34%, 0% 0%);
+  .splash-map{
+    position:absolute; inset:0; z-index:1; border-radius:46px;
+    background:#EFEBFB; overflow:hidden;
+    box-shadow:0 26px 60px rgba(91,91,214,0.32);
+    animation:mapOut 0.45s ease 1.05s forwards;
   }
-  .sm-block.bB{
-    width:100%; height:100%; top:0; left:0;
-    background:var(--blob2, var(--accent-soft));
-    opacity:0.8;
-    clip-path:polygon(78% 0%, 100% 0%, 100% 30%, 88% 42%);
-  }
-  .sm-road{
-    position:absolute; width:320px; height:32px; background:var(--surface); opacity:0.9;
-    left:-52px; top:58%; transform:rotate(-15deg);
-  }
+  @keyframes mapOut{ to{ opacity:0; transform:scale(1.06); } }
+
+  .sm-block{ position:absolute; width:100%; height:100%; top:0; left:0; }
+  .sm-block.bA{ background:#D9D0F7; clip-path:polygon(26.4% 0%, 60.5% 0%, 19.5% 44.9%, 0% 33.2%, 0% 0%); }
+  .sm-block.bB{ background:#C9BEFB; clip-path:polygon(78.1% 0%, 100% 0%, 100% 29.3%, 87.9% 41%); }
+  .sm-block.bC{ background:#F5F3FC; clip-path:polygon(0% 59.6%, 100% 31.3%, 100% 45.9%, 0% 74.2%); }
 
   .splash-wordmark{
     font-size:1.5rem; font-weight:800; letter-spacing:-0.02em; color:var(--text);
+    margin-top:-46px; position:relative; z-index:3;
     opacity:0; transform:translateY(10px);
-    animation:wordmarkIn 0.6s cubic-bezier(0.22,1,0.36,1) 2.55s forwards;
+    animation:wordmarkIn 0.5s cubic-bezier(0.22,1,0.36,1) 2.05s forwards;
   }
   @keyframes wordmarkIn{ to{ opacity:1; transform:translateY(0); } }
 
   .sm-pin{ position:absolute; }
-  .sm-pin.sp1, .sm-pin.sp2, .sm-pin.sp3, .sm-pin.hero{ transform:translate(-50%,-100%); }
-  .sm-pin .pin-svg{
-    display:block; opacity:0; filter:drop-shadow(0 6px 10px rgba(0,0,0,0.26));
-    transform-origin:bottom center;
-    animation:pinDrop 0.8s cubic-bezier(0.32,1.7,0.5,1) forwards;
-  }
-  .sm-pin.sp1 .pin-svg{ animation-delay:0.55s; }
-  .sm-pin.sp2 .pin-svg{ animation-delay:0.85s; }
-  .sm-pin.sp3 .pin-svg{ animation-delay:1.15s; }
+  .sm-pin.sp1, .sm-pin.sp2, .sm-pin.hero{ transform:translate(-50%,-100%); }
+  .sm-pin.hero{ z-index:2; }
+  .sm-pin .pin-svg{ display:block; transform-origin:bottom center; }
   .sm-pin.hero .pin-svg{
-    animation-delay:1.55s; animation-duration:0.9s;
-    animation-name:heroDrop; filter:drop-shadow(0 16px 28px rgba(91,91,214,0.45));
+    animation:heroPulse 1.1s cubic-bezier(0.34,1.4,0.4,1) 1.1s both;
   }
-  @keyframes pinDrop{
-    0%{ opacity:0; transform:translateY(-90px) scale(0.4); }
-    60%{ opacity:1; transform:translateY(6px) scale(1.16); }
-    80%{ transform:translateY(-4px) scale(0.94); }
-    100%{ opacity:1; transform:translateY(0) scale(1); }
-  }
-  @keyframes heroDrop{
-    0%{ opacity:0; transform:translateY(-120px) scale(0.4) rotate(-6deg); }
-    60%{ opacity:1; transform:translateY(8px) scale(1.14) rotate(2deg); }
-    80%{ transform:translateY(-5px) scale(0.95) rotate(-1deg); }
-    100%{ opacity:1; transform:translateY(0) scale(1) rotate(0); }
+  @keyframes heroPulse{
+    0%{ transform:scale(1) translateY(0); }
+    35%{ transform:scale(1.22) translateY(-14px); }
+    58%{ transform:scale(0.95) translateY(4px); }
+    78%{ transform:scale(1.06) translateY(-4px); }
+    100%{ transform:scale(1) translateY(0); }
   }
   .theme-toggle{
     width:40px; height:40px; border-radius:13px; border:1px solid var(--border);
@@ -143,6 +130,9 @@
     background:var(--bg);
     overflow-x:hidden; overflow-y:auto; transition:background 0.35s ease;
   }
+  .screen:not(.hidden){ animation:screenEnter 0.34s cubic-bezier(0.22,1,0.36,1); }
+  @keyframes screenEnter{ from{ opacity:0; transform:translateY(10px) scale(0.98); } to{ opacity:1; transform:translateY(0) scale(1); } }
+  #app.active{ animation:screenEnter 0.34s cubic-bezier(0.22,1,0.36,1); }
   @keyframes gradientShift{ 0%{background-position:0% 50%;} 50%{background-position:100% 50%;} 100%{background-position:0% 50%;} }
 
   /* 내 모임 홈 - 중앙 카드 대신 화면 전체를 채우는 레이아웃 */
@@ -176,6 +166,7 @@
     border:1px solid var(--border); box-shadow:var(--shadow-md);
     padding:18px; margin-bottom:14px; cursor:pointer; overflow:hidden;
     transition:transform 0.12s ease;
+    animation:cardIn 0.32s ease backwards;
   }
   .room-card:active{ transform:scale(0.98); }
   .rc-top{ display:flex; align-items:center; gap:14px; }
@@ -386,19 +377,11 @@
   .weather-source{ font-size:0.72rem; color:var(--faint); text-align:center; margin:14px 0 0; line-height:1.6; }
   .weather-source a{ color:var(--accent); font-weight:700; }
 
-  /* ===== chat FAB + sheet ===== */
-  .chat-fab{
-    position:absolute; right:16px; bottom:16px; z-index:12;
-    width:52px; height:52px; border-radius:50%; border:none;
-    background:linear-gradient(135deg,var(--accent),var(--accent-2)); color:#fff;
-    font-size:1.4rem; box-shadow:0 10px 26px rgba(91,91,214,0.4);
-    display:flex; align-items:center; justify-content:center;
-  }
-  .chat-fab:active{ transform:scale(0.93); }
+  /* ===== chat (헤더 아이콘 버튼) ===== */
   .chat-badge{
-    position:absolute; top:-2px; right:-2px; min-width:18px; height:18px; padding:0 4px;
-    border-radius:10px; background:var(--danger); color:#fff; font-size:0.66rem; font-weight:800;
-    display:flex; align-items:center; justify-content:center; border:2px solid var(--bg);
+    position:absolute; top:-2px; right:-2px; min-width:16px; height:16px; padding:0 3px;
+    border-radius:9px; background:var(--danger); color:#fff; font-size:0.6rem; font-weight:800;
+    display:flex; align-items:center; justify-content:center; border:2px solid var(--surface-strong);
   }
   .chat-sheet{ display:flex; flex-direction:column; height:78vh; max-height:78vh; padding-bottom:calc(14px + env(safe-area-inset-bottom)); }
   .chat-list{ flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:6px 2px 10px; display:flex; flex-direction:column; gap:10px; }
@@ -530,6 +513,7 @@
   .btn:active{ transform:scale(0.97); }
   .btn-cancel{ background:var(--bg); color:var(--text-soft); }
   .btn-save{ background:linear-gradient(135deg,var(--accent),var(--accent-2)); color:#fff; box-shadow:0 6px 16px rgba(91,91,214,0.32); }
+  .btn-danger{ background:var(--danger-soft); color:var(--danger); }
 
   .toggle-row{ display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-top:1px solid var(--border); }
   .toggle-row:first-of-type{ border-top:none; }
@@ -562,23 +546,20 @@
 </script>
 
 <div id="splashScreen">
-  <div class="splash-map">
-    <span class="sm-block bA"></span>
-    <span class="sm-block bB"></span>
-    <span class="sm-road"></span>
-
-    <div class="sm-pin sp1" style="left:44px; top:198px;">
-      <svg class="pin-svg" width="48" height="62" viewBox="0 0 20 26"><path d="M10 0C4.5 0 0 4.3 0 9.6 0 16.8 10 26 10 26s10-9.2 10-16.4C20 4.3 15.5 0 10 0z" fill="#7C6BF0"/></svg>
+  <div class="splash-stage">
+    <div class="splash-map">
+      <span class="sm-block bA"></span>
+      <span class="sm-block bB"></span>
+      <span class="sm-block bC"></span>
+      <div class="sm-pin sp1" style="left:35%; top:98.8%;">
+        <svg class="pin-svg" width="63" height="77" viewBox="0 0 20 26"><path d="M10 0C4.5 0 0 4.3 0 9.6 0 16.8 10 26 10 26s10-9.2 10-16.4C20 4.3 15.5 0 10 0z" fill="#A99BF5"/></svg>
+      </div>
+      <div class="sm-pin sp2" style="left:76.8%; top:47.5%;">
+        <svg class="pin-svg" width="72" height="87" viewBox="0 0 20 26"><path d="M10 0C4.5 0 0 4.3 0 9.6 0 16.8 10 26 10 26s10-9.2 10-16.4C20 4.3 15.5 0 10 0z" fill="#8A79F2"/></svg>
+      </div>
     </div>
-    <div class="sm-pin sp2" style="left:202px; top:58px;">
-      <svg class="pin-svg" width="48" height="62" viewBox="0 0 20 26"><path d="M10 0C4.5 0 0 4.3 0 9.6 0 16.8 10 26 10 26s10-9.2 10-16.4C20 4.3 15.5 0 10 0z" fill="#6C5CE0"/></svg>
-    </div>
-    <div class="sm-pin sp3" style="left:204px; top:204px;">
-      <svg class="pin-svg" width="48" height="62" viewBox="0 0 20 26"><path d="M10 0C4.5 0 0 4.3 0 9.6 0 16.8 10 26 10 26s10-9.2 10-16.4C20 4.3 15.5 0 10 0z" fill="#A99BF5"/></svg>
-    </div>
-
-    <div class="sm-pin hero" style="left:50%; top:74%;">
-      <svg class="pin-svg" width="82" height="106" viewBox="0 0 20 26">
+    <div class="sm-pin hero" style="left:50%; top:74.4%;">
+      <svg class="pin-svg" width="104" height="135" viewBox="0 0 20 26">
         <defs>
           <linearGradient id="splashGrad" x1="0" y1="0" x2="20" y2="26" gradientUnits="userSpaceOnUse">
             <stop offset="0" style="stop-color:var(--accent)"/>
@@ -693,10 +674,8 @@
       </div>
       <div class="err" id="loginErr">아이디와 비밀번호를 확인해줘!</div>
 
-      <div style="display:flex; align-items:center; justify-content:center; gap:16px; margin-top:8px;">
+      <div style="text-align:center; margin-top:8px;">
         <button class="back-link" id="goSignup" style="padding:0;">회원가입</button>
-        <span style="width:1px; height:12px; background:var(--line);"></span>
-        <button class="back-link" id="findAccountBtn" style="padding:0;">아이디·비밀번호 찾기</button>
       </div>
 
       <div class="or-divider"><span>또는</span></div>
@@ -726,7 +705,7 @@
     </div>
     <div class="field">
       <label>비밀번호</label>
-      <input id="signupPw" type="password" placeholder="비밀번호 (4자 이상)" maxlength="40" autocomplete="new-password">
+      <input id="signupPw" type="password" placeholder="비밀번호 (6자 이상)" maxlength="40" autocomplete="new-password">
     </div>
     <div class="field">
       <label>비밀번호 확인</label>
@@ -743,7 +722,7 @@
   <div class="home-wrap">
     <div class="home-header">
       <div>
-        <p class="home-eyebrow">📍 어디가지?</p>
+        <p class="home-eyebrow" id="homeGreeting">📍 어디가지?</p>
         <h1 class="home-title">내 모임</h1>
       </div>
       <button class="icon-btn" id="menuBtn" title="메뉴" style="width:44px; height:44px; border-radius:14px; background:var(--surface); backdrop-filter:blur(var(--blur)); border:1px solid var(--border); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;">
@@ -850,6 +829,9 @@
       </div>
     </div>
     <div class="h-right">
+      <button class="icon-btn" id="chatFab" title="채팅" style="position:relative;">
+        💬<span class="chat-badge hidden" id="chatBadge">1</span>
+      </button>
       <button class="icon-btn" id="homeBtn" title="내 모임">
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10.5L12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>
       </button>
@@ -887,9 +869,6 @@
       </div>
       <div class="search-results" id="searchResults"></div>
     </div>
-    <button class="chat-fab" id="chatFab" title="채팅">
-      💬<span class="chat-badge hidden" id="chatBadge">1</span>
-    </button>
   </div>
 
   <div class="panel">
@@ -924,10 +903,6 @@
     <div class="sheet-grip"></div>
     <h3>방 설정</h3>
     <p class="sub" id="settingsSub">방장만 바꿀 수 있어</p>
-    <div class="toggle-row" style="border-top:none;">
-      <div><div class="tr-label">🌙 다크 모드</div></div>
-      <button class="theme-toggle" data-theme-toggle style="width:44px; height:26px; border-radius:14px; padding:2px;"><span class="theme-toggle-icon">🌙</span></button>
-    </div>
 
     <div id="hostSettings">
       <div class="field"><label>약속 날짜 & 시간</label><input id="meetDateInput" type="datetime-local"></div>
@@ -943,9 +918,7 @@
         <button class="btn btn-cancel" id="settingsCancel">닫기</button>
         <button class="btn btn-save" id="settingsSave">저장</button>
       </div>
-      <div style="text-align:center; margin-top:18px; padding-top:14px; border-top:1px solid var(--border);">
-        <button class="back-link" id="deleteRoomBtn" style="color:var(--danger);">🗑️ 이 방 완전히 삭제 (모두에게)</button>
-      </div>
+      <button class="btn btn-danger" id="deleteRoomBtn" style="width:100%; margin-top:10px;">🗑️ 이 방 완전히 삭제 (모두에게)</button>
     </div>
 
     <div id="memberSettings" class="hidden">
@@ -958,11 +931,7 @@
       </div>
       <button class="btn btn-cancel" style="width:100%;" id="memberClose">닫기</button>
     </div>
-    <div style="text-align:center; margin-top:14px;">
-      <button class="back-link" id="leaveRoomBtn" style="color:var(--accent);">← 내 모임 목록으로</button>
-      <br>
-      <button class="back-link" id="removeRoomBtn" style="color:var(--danger); margin-top:4px;">이 방 목록에서 지우기</button>
-    </div>
+    <button class="btn btn-cancel" id="leaveRoomBtn" style="width:100%; margin-top:10px;">← 내 모임 목록으로</button>
   </div>
 </div>
 
@@ -1042,10 +1011,10 @@
       <div class="drawer-row">
         <span class="dr-icon">🌙</span>
         <div style="flex:1;">
-          <div class="dr-label">다크 모드</div>
+          <div class="dr-label">라이트/다크모드</div>
           <div class="dr-desc" id="menuThemeLabel">라이트 모드</div>
         </div>
-        <button class="theme-toggle" data-theme-toggle style="width:44px; height:26px; border-radius:14px; padding:2px;"><span class="theme-toggle-icon">🌙</span></button>
+        <label class="switch"><input type="checkbox" id="themeSwitch"><span class="slider"></span></label>
       </div>
       <button class="drawer-item" id="menuNicknameBtn">
         <span class="dr-icon">✏️</span>
@@ -1254,6 +1223,8 @@ function updateThemeIcons(){
   document.querySelectorAll('.theme-toggle-icon').forEach(el=> el.textContent = dark ? '☀️' : '🌙');
   const lbl = document.getElementById('menuThemeLabel');
   if(lbl) lbl.textContent = dark ? '다크 모드' : '라이트 모드';
+  const sw = document.getElementById('themeSwitch');
+  if(sw) sw.checked = dark;
 }
 function applyTheme(t){
   document.documentElement.setAttribute('data-theme', t);
@@ -1283,7 +1254,7 @@ async function signUp(id, pw, nickname){
   try{
     const cred = await createUserWithEmailAndPassword(auth, idToEmail(id), pw);
     try{ await updateProfile(cred.user, { displayName: nickname }); }catch(e){}
-    await set(ref(db, 'users/'+cred.user.uid), { id, nickname, createdAt:Date.now() });
+    await set(ref(db, 'users/'+cred.user.uid), { id, nickname, provider:'password', createdAt:Date.now() });
     return { ok:true, uid:cred.user.uid, nickname };
   }catch(e){
     console.error(e);
@@ -1328,7 +1299,7 @@ async function handleGoogleUser(user){
   try{
     const snap = await get(child(ref(db), 'users/'+user.uid));
     if(snap.exists() && snap.val().nickname){ nickname = snap.val().nickname; }
-    else{ await set(ref(db, 'users/'+user.uid), { nickname, provider:'google', createdAt:Date.now() }); }
+    else{ await set(ref(db, 'users/'+user.uid), { nickname, provider:'google', email:user.email||'', createdAt:Date.now() }); }
   }catch(e){ console.warn('구글 프로필 동기화 실패', e); }
   applySession(user.uid, nickname);
   afterAuthSuccess();
@@ -1375,7 +1346,36 @@ function showScreen(idOrNull){
 }
 
 /* ================= my rooms home ================= */
+function homeGreetingText(){
+  const now = new Date();
+  const h = now.getHours();
+  const days = ['일요일','월요일','화요일','수요일','목요일','금요일','토요일'];
+  const day = days[now.getDay()];
+  const isWeekend = (now.getDay()===0 || now.getDay()===6);
+  const moods = ['화창한','선선한','포근한','여유로운','활기찬','나른한','상쾌한','조용한','평화로운'];
+  const mood = ()=> moods[Math.floor(Math.random()*moods.length)];
+
+  let pool;
+  if(h < 5){
+    pool = ['이 시간까지 안 자고 뭐해 👀', `고요한 ${day} 새벽이에요`, '오늘 하루도 잘 마무리했어?'];
+  } else if(h < 9){
+    pool = ['좋은 아침이에요 ☀️', `${mood()} 아침이에요`, '오늘도 화이팅! 💪', `상쾌한 ${day} 아침이에요`];
+  } else if(h < 12){
+    pool = [`${mood()} 오전이에요`, '오늘 하루도 잘 보내고 있어?', `${day} 오전, 어떻게 보내고 있어?`];
+  } else if(h < 14){
+    pool = ['맛있는 점심 시간이에요 🍚', '점심은 뭐 먹을지 골랐어?', '든든하게 챙겨 먹었어?'];
+  } else if(h < 18){
+    pool = [`아주 ${mood()} 오후예요`, `${mood()} ${day} 오후예요`, '나른한 오후, 잠깐 쉬었다 가 ☕', isWeekend?'여유로운 주말 오후예요':'오늘도 수고 많아'];
+  } else if(h < 21){
+    pool = [`${mood()} 저녁이에요`, '하루 마무리는 어때?', '선선한 바람 부는 저녁이에요 🌇', `${day} 저녁, 오늘 뭐 했어?`];
+  } else {
+    pool = ['편안한 밤 되세요 🌙', '오늘 하루도 수고했어', `${mood()} ${day} 밤이에요`, '슬슬 잘 준비할 시간이야'];
+  }
+  return pool[Math.floor(Math.random()*pool.length)];
+}
 function goHomeOrLobby(){
+  const gEl = $('homeGreeting');
+  if(gEl) gEl.textContent = homeGreetingText();
   renderRoomList();
   showScreen('homeScreen');
 }
@@ -1395,8 +1395,8 @@ function renderRoomList(){
     box.innerHTML = `<div class="room-empty-full"><span class="big">🗺️</span>아직 참여 중인 모임이 없어요<br>새 모임을 만들거나, 친구에게 받은<br>코드로 모임에 참여해봐</div>`;
     return;
   }
-  box.innerHTML = list.map(r=>`
-    <div class="room-card" data-code="${escapeHtml(r.code)}">
+  box.innerHTML = list.map((r,i)=>`
+    <div class="room-card" data-code="${escapeHtml(r.code)}" style="animation-delay:${i*45}ms">
       <button class="rc-del" data-del="${escapeHtml(r.code)}" title="목록에서 제거">✕</button>
       <div class="rc-top">
         <div class="rc-icon">${escapeHtml(r.emoji || '📍')}</div>
@@ -1422,7 +1422,15 @@ function renderRoomList(){
     });
   });
   box.querySelectorAll('[data-del]').forEach(btn=>{
-    btn.addEventListener('click', (e)=>{ e.stopPropagation(); forgetRoom(btn.dataset.del); renderRoomList(); });
+    btn.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const code = btn.dataset.del;
+      const card = btn.closest('.room-card');
+      const name = card ? card.querySelector('.rc-name').textContent : code;
+      if(!confirm(`'${name}' 방을 내 모임 목록에서 지울까?\n(방 자체가 삭제되는 건 아니고, 코드로 다시 들어올 수 있어)`)) return;
+      forgetRoom(code);
+      renderRoomList();
+    });
   });
   // 디데이·1위 후보·인원·후보수는 백그라운드에서 하나씩 채워넣기 (목록은 즉시 뜸)
   list.forEach(r=> enrichRoomCard(r.code));
@@ -1501,9 +1509,6 @@ $('loginBtn').addEventListener('click', async ()=>{
   afterAuthSuccess();
 });
 $('goSignup').addEventListener('click', ()=> showScreen('signupScreen'));
-$('findAccountBtn').addEventListener('click', ()=>{
-  showToast('이메일 인증이 없어서 찾기는 아직 안 돼 · 새 아이디로 가입해줘!');
-});
 
 /* ---- signup ---- */
 $('signupBtn').addEventListener('click', async ()=>{
@@ -1736,12 +1741,24 @@ function closeDetail(){
 }
 
 /* ================= account menu drawer ================= */
-function openAccountMenu(){
+async function openAccountMenu(){
   $('menuAvatar').textContent = initials(myNickname);
   $('menuNickname').textContent = myNickname || '이름 없음';
-  $('menuId').textContent = '@' + myId;
+  $('menuId').textContent = '불러오는 중...';
   $('menuThemeLabel').textContent = getTheme()==='dark' ? '다크 모드' : '라이트 모드';
   $('menuOverlay').classList.add('show');
+  try{
+    if(!fbReady){ const ok = await loadFirebase(); if(!ok){ $('menuId').textContent=''; return; } }
+    const snap = await get(child(ref(db), 'users/'+myId));
+    const info = snap.exists() ? snap.val() : {};
+    if(info.provider === 'google'){
+      $('menuId').textContent = info.email ? `Google 계정 · ${info.email}` : 'Google 계정으로 로그인';
+    } else if(info.id){
+      $('menuId').textContent = '@' + info.id;
+    } else {
+      $('menuId').textContent = '';
+    }
+  }catch(e){ $('menuId').textContent = ''; }
 }
 function closeAccountMenu(){ $('menuOverlay').classList.remove('show'); }
 
@@ -2393,7 +2410,8 @@ function leaveRoom(){
 
 /* ================= map init ================= */
 function initMap(){
-  map = L.map('map', { zoomControl:true, attributionControl:true }).setView(SCHOOL, 16);
+  map = L.map('map', { zoomControl:false, attributionControl:true }).setView(SCHOOL, 16);
+  L.control.zoom({ position:'bottomleft' }).addTo(map);
   L.tileLayer('https://tiles.stadiamaps.com/tiles/osm_bright/{z}/{x}/{y}{r}.png?api_key=02b979b3-769b-4591-adac-f99406ed63fb', { maxZoom:20, attribution:'&copy; Stadia Maps, &copy; OpenMapTiles, &copy; OpenStreetMap contributors' }).addTo(map);
   map.on('click', (e)=>{
     if($('addOverlay').classList.contains('show')){
@@ -2403,9 +2421,9 @@ function initMap(){
   });
   map.on('movestart', hideResults);
 
-  // 현재 위치로 지도 이동 버튼
+  // 현재 위치로 지도 이동 버튼 (검색창과 안 겹치게 하단에 배치)
   const LocateControl = L.Control.extend({
-    options:{ position:'topright' },
+    options:{ position:'bottomright' },
     onAdd:function(){
       const btn = L.DomUtil.create('button', 'locate-btn');
       btn.innerHTML = '📍';
@@ -2416,9 +2434,9 @@ function initMap(){
   });
   map.addControl(new LocateControl());
 
-  // 내 위치를 멤버들과 실시간 공유하는 토글 버튼
+  // 내 위치를 멤버들과 실시간 공유하는 토글 버튼 (검색창과 안 겹치게 하단에 배치)
   const ShareLocControl = L.Control.extend({
-    options:{ position:'topright' },
+    options:{ position:'bottomright' },
     onAdd:function(){
       const btn = L.DomUtil.create('button', 'locate-btn');
       btn.id = 'shareLocBtn';
@@ -2475,12 +2493,6 @@ $('settingsSave').addEventListener('click', saveSettings);
 $('memberClose').addEventListener('click', closeSettings);
 $('settingsOverlay').addEventListener('click', (e)=>{ if(e.target.id==='settingsOverlay') closeSettings(); });
 $('leaveRoomBtn').addEventListener('click', leaveRoom);
-$('removeRoomBtn').addEventListener('click', ()=>{
-  const code = roomCode;
-  forgetRoom(code);
-  showToast('목록에서 지웠어');
-  leaveRoom();
-});
 $('deleteRoomBtn').addEventListener('click', ()=>{
   if(!isHost()){ showToast('방장만 삭제할 수 있어'); return; }
   const name = room.name || '이 방';
@@ -2619,6 +2631,7 @@ function afterAuthSuccess(){
 /* 테마 적용 + 토글 버튼 전부 연결 */
 applyTheme(getTheme());
 document.querySelectorAll('[data-theme-toggle]').forEach(btn=> btn.addEventListener('click', toggleTheme));
+$('themeSwitch').addEventListener('change', toggleTheme);
 function replayOnboarding(){
   const track = $('obTrack');
   track.scrollTo({ left:0, behavior:'auto' });
@@ -2663,7 +2676,7 @@ $('locShareConfirm').addEventListener('click', startSharingLocation);
 $('locShareOverlay').addEventListener('click', (e)=>{ if(e.target.id==='locShareOverlay') $('locShareOverlay').classList.remove('show'); });
 
 /* ---- 시작 스플래시 제거 (최소 노출 시간 보장) ---- */
-const SPLASH_MIN_MS = 3350;
+const SPLASH_MIN_MS = 3300;
 const splashStartTs = Date.now();
 function hideSplash(){
   const el = $('splashScreen');
