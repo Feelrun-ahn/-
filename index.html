@@ -193,6 +193,9 @@
   .big-btn{ width:100%; border:none; border-radius:15px; padding:15px; font-size:0.98rem; font-weight:800; color:#fff; background:linear-gradient(120deg,var(--accent),#9B6BE0); box-shadow:0 8px 20px rgba(91,91,214,0.36); transition:transform 0.14s ease; display:flex; align-items:center; justify-content:center; gap:8px; }
   .big-btn:active{ transform:scale(0.97); }
   .big-btn.ghost{ background:var(--bg); color:var(--accent); box-shadow:none; border:2px solid var(--accent-soft); }
+  .big-btn.google-btn{ background:var(--surface); backdrop-filter:blur(var(--blur)); color:var(--text); border:1.5px solid var(--border); box-shadow:var(--shadow-sm); display:flex; align-items:center; justify-content:center; gap:10px; }
+  .or-divider{ display:flex; align-items:center; gap:10px; margin:16px 0; color:var(--faint); font-size:0.76rem; }
+  .or-divider::before, .or-divider::after{ content:""; flex:1; height:1px; background:var(--border); }
   .divider{ display:flex; align-items:center; gap:10px; margin:16px 0; color:#B4B9C4; font-size:0.76rem; }
   .divider::before, .divider::after{ content:""; flex:1; height:1px; background:var(--border); }
 
@@ -567,6 +570,11 @@
       <div class="brand-title" style="font-size:1.4rem;">반갑습니다</div>
       <div class="brand-sub" style="font-weight:600;">로그인하면 내 모임이 계속 이어져</div>
     </div>
+    <button class="big-btn google-btn" id="googleLoginBtn" type="button">
+      <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 3l6-6C34 5.1 29.3 3 24 3 12.4 3 3 12.4 3 24s9.4 21 21 21 21-9.4 21-21c0-1.4-.1-2.7-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 15.9 18.9 13 24 13c3.1 0 5.8 1.1 8 3l6-6C34 5.1 29.3 3 24 3c-7.7 0-14.3 4.3-17.7 10.7z"/><path fill="#4CAF50" d="M24 45c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 36.2 26.7 37 24 37c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.6 40.6 16.3 45 24 45z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.2 4.2-4.1 5.6l6.2 5.2C40.5 36 44 30.5 44 24c0-1.4-.1-2.7-.4-3.5z"/></svg>
+      <span>Google로 계속하기</span>
+    </button>
+    <div class="or-divider"><span>또는</span></div>
     <div class="field">
       <label>아이디</label>
       <input id="loginId" type="text" placeholder="아이디를 입력해줘" maxlength="20" autocomplete="username">
@@ -1048,8 +1056,11 @@
 
 // Firebase는 아래에서 동적으로 로드 (로드 실패해도 UI는 멈추지 않음)
 let initializeApp, getDatabase, ref, onValue, set, update, remove, get, child, onDisconnect;
-let fbApp, db;
+let getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile;
+let GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult;
+let fbApp, db, auth;
 let fbReady = false;
+let authReadyPromise = null;
 
 const firebaseConfig = {
   apiKey: "AIzaSyD0T7uDapkuRHmxE1s3Dz9QTo2lbp2xlsA",
@@ -1065,17 +1076,32 @@ async function loadFirebase(){
   try{
     const appMod = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
     const dbMod = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js");
+    const authMod = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js");
     initializeApp = appMod.initializeApp;
     ({ getDatabase, ref, onValue, set, update, remove, get, child, onDisconnect } = dbMod);
+    ({ getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile } = authMod);
+    ({ GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult } = authMod);
     fbApp = initializeApp(firebaseConfig);
     db = getDatabase(fbApp);
+    auth = getAuth(fbApp);
     fbReady = true;
+    if(!authReadyPromise){
+      authReadyPromise = new Promise((resolve)=>{
+        const unsub = onAuthStateChanged(auth, (user)=>{ unsub(); resolve(user); });
+      });
+    }
     return true;
   }catch(e){
     console.error('Firebase 로드 실패', e);
     fbReady = false;
     return false;
   }
+}
+
+async function ensureAuthReady(){
+  if(!fbReady){ const ok = await loadFirebase(); if(!ok) return false; }
+  if(authReadyPromise) await authReadyPromise;
+  return !!(auth && auth.currentUser);
 }
 
 /* ================= constants ================= */
@@ -1137,15 +1163,13 @@ function applyTheme(t){
 }
 function toggleTheme(){ applyTheme(getTheme()==='dark' ? 'light' : 'dark'); }
 
-/* ================= 계정 시스템 (ID/비밀번호) =================
-   참고: 이메일 인증 서버가 없어서 "완전한" 보안은 아니야.
-   비밀번호는 평문으로 저장하지 않고 SHA-256 해시로만 저장해서,
-   같은 이름을 여러 명이 써도 계정(ID)이 겹치지 않게 막아주는 정도의 보호야. */
-async function hashPassword(pw){
-  const enc = new TextEncoder().encode(pw);
-  const buf = await crypto.subtle.digest('SHA-256', enc);
-  return Array.from(new Uint8Array(buf)).map(b=> b.toString(16).padStart(2,'0')).join('');
-}
+/* ================= 계정 시스템 (Firebase Authentication 사용) =================
+   태현이 정하는 "아이디"를 내부적으로 가짜 이메일 형식으로 바꿔서
+   Firebase의 정식 로그인 서버(Authentication)에 등록/로그인해.
+   비밀번호는 Firebase 서버에서만 확인하고, 우리 코드나 데이터베이스에는
+   저장되지도, 지나가지도 않아 — 지금까지 중 제일 안전한 방식이야. */
+function idToEmail(id){ return safeKey(id).toLowerCase() + '@eodigaji.app'; }
+
 function loadSession(){
   try{ return JSON.parse(localStorage.getItem(LS_SESSION) || 'null'); }catch(e){ return null; }
 }
@@ -1156,27 +1180,36 @@ function clearSession(){ try{ localStorage.removeItem(LS_SESSION); }catch(e){} }
 
 async function signUp(id, pw, nickname){
   if(!fbReady){ const ok = await loadFirebase(); if(!ok) return { ok:false, msg:'서버 연결 실패 · 인터넷을 확인해줘' }; }
-  const key = safeKey(id);
-  let snap;
-  try{ snap = await get(child(ref(db), 'users/'+key)); }
-  catch(e){ return { ok:false, msg:'연결 실패 · 인터넷을 확인해줘' }; }
-  if(snap.exists()){ return { ok:false, msg:'이미 있는 아이디야. 다른 아이디를 써줘' }; }
-  const passHash = await hashPassword(pw);
-  try{ await set(ref(db, 'users/'+key), { id, nickname, passHash, createdAt:Date.now() }); }
-  catch(e){ return { ok:false, msg:'가입 실패 · 다시 시도해줘' }; }
-  return { ok:true };
+  if(!/^[a-zA-Z0-9_]{3,20}$/.test(id)){ return { ok:false, msg:'아이디는 영문/숫자/밑줄로 3~20자로 해줘' }; }
+  try{
+    const cred = await createUserWithEmailAndPassword(auth, idToEmail(id), pw);
+    try{ await updateProfile(cred.user, { displayName: nickname }); }catch(e){}
+    await set(ref(db, 'users/'+cred.user.uid), { id, nickname, createdAt:Date.now() });
+    return { ok:true, uid:cred.user.uid, nickname };
+  }catch(e){
+    console.error(e);
+    if(e.code === 'auth/email-already-in-use') return { ok:false, msg:'이미 있는 아이디야. 다른 아이디를 써줘' };
+    if(e.code === 'auth/weak-password') return { ok:false, msg:'비밀번호는 6자 이상으로 해줘' };
+    return { ok:false, msg:'가입 실패 · 다시 시도해줘' };
+  }
 }
 async function logIn(id, pw){
   if(!fbReady){ const ok = await loadFirebase(); if(!ok) return { ok:false, msg:'서버 연결 실패 · 인터넷을 확인해줘' }; }
-  const key = safeKey(id);
-  let snap;
-  try{ snap = await get(child(ref(db), 'users/'+key)); }
-  catch(e){ return { ok:false, msg:'연결 실패 · 인터넷을 확인해줘' }; }
-  if(!snap.exists()){ return { ok:false, msg:'그런 아이디가 없어. 회원가입부터 해줘!' }; }
-  const user = snap.val();
-  const passHash = await hashPassword(pw);
-  if(passHash !== user.passHash){ return { ok:false, msg:'비밀번호가 일치하지 않아' }; }
-  return { ok:true, nickname:user.nickname };
+  try{
+    const cred = await signInWithEmailAndPassword(auth, idToEmail(id), pw);
+    let nickname = cred.user.displayName || id;
+    try{
+      const snap = await get(child(ref(db), 'users/'+cred.user.uid));
+      if(snap.exists() && snap.val().nickname) nickname = snap.val().nickname;
+    }catch(e){}
+    return { ok:true, uid:cred.user.uid, nickname };
+  }catch(e){
+    console.error(e);
+    if(e.code === 'auth/user-not-found' || e.code === 'auth/invalid-credential') return { ok:false, msg:'아이디 또는 비밀번호가 틀렸어' };
+    if(e.code === 'auth/wrong-password') return { ok:false, msg:'비밀번호가 일치하지 않아' };
+    if(e.code === 'auth/too-many-requests') return { ok:false, msg:'시도가 너무 많았어 · 잠시 후 다시 해줘' };
+    return { ok:false, msg:'로그인 실패 · 다시 시도해줘' };
+  }
 }
 function applySession(id, nickname){
   myId = id; myNickname = nickname;
@@ -1186,7 +1219,53 @@ function doLogout(){
   clearSession();
   myId=''; myNickname='';
   closeAccountMenu();
+  try{ if(fbReady) signOut(auth); }catch(e){}
   showScreen('introScreen');
+}
+
+/* ---- Google 로그인 (Firebase의 정식 Google Sign-In) ---- */
+async function handleGoogleUser(user){
+  let nickname = user.displayName || '친구';
+  try{
+    const snap = await get(child(ref(db), 'users/'+user.uid));
+    if(snap.exists() && snap.val().nickname){ nickname = snap.val().nickname; }
+    else{ await set(ref(db, 'users/'+user.uid), { nickname, provider:'google', createdAt:Date.now() }); }
+  }catch(e){ console.warn('구글 프로필 동기화 실패', e); }
+  applySession(user.uid, nickname);
+  afterAuthSuccess();
+}
+async function signInWithGoogleFlow(){
+  if(!fbReady){ const ok = await loadFirebase(); if(!ok){ showToast('서버 연결 실패 · 인터넷을 확인해줘'); return; } }
+  const btn = $('googleLoginBtn');
+  if(btn) btn.disabled = true;
+  try{
+    const provider = new GoogleAuthProvider();
+    let cred;
+    try{
+      cred = await signInWithPopup(auth, provider);
+    }catch(popupErr){
+      if(popupErr.code === 'auth/popup-closed-by-user'){ return; }
+      if(popupErr.code === 'auth/popup-blocked' || popupErr.code === 'auth/operation-not-supported-in-this-environment'){
+        // 팝업이 막히는 환경(일부 설치된 앱/브라우저)에서는 리다이렉트 방식으로 대신 진행
+        await signInWithRedirect(auth, provider);
+        return; // 페이지가 이동하므로 여기서 끝
+      }
+      throw popupErr;
+    }
+    await handleGoogleUser(cred.user);
+  }catch(e){
+    console.error(e);
+    showToast('구글 로그인 실패 · 다시 시도해줘');
+  }finally{
+    if(btn) btn.disabled = false;
+  }
+}
+async function checkGoogleRedirectResult(){
+  if(!fbReady) return;
+  try{
+    const result = await getRedirectResult(auth);
+    if(result && result.user){ await handleGoogleUser(result.user); }
+  }catch(e){ console.warn('구글 리다이렉트 로그인 처리 실패', e); }
 }
 
 function showScreen(idOrNull){
@@ -1228,7 +1307,8 @@ function renderRoomList(){
   });
 }
 async function quickEnter(code){
-  if(!fbReady){ const ok = await loadFirebase(); if(!ok){ showToast('서버 연결 실패 · 인터넷 확인'); return; } }
+  const authed = await ensureAuthReady();
+  if(!authed){ showToast('로그인이 필요해 · 다시 로그인해줘'); doLogout(); return; }
   let snap;
   try{ snap = await get(child(ref(db), 'rooms/'+code)); }
   catch(e){ showToast('연결 실패 · 인터넷 확인'); return; }
@@ -1255,6 +1335,7 @@ document.querySelectorAll('[data-back]').forEach(b=> b.addEventListener('click',
 document.querySelectorAll('[data-back-intro]').forEach(b=> b.addEventListener('click', ()=> showScreen('introScreen')));
 
 /* ---- login ---- */
+$('googleLoginBtn').addEventListener('click', signInWithGoogleFlow);
 $('loginBtn').addEventListener('click', async ()=>{
   const id = $('loginId').value.trim();
   const pw = $('loginPw').value;
@@ -1264,7 +1345,7 @@ $('loginBtn').addEventListener('click', async ()=>{
   const res = await logIn(id, pw);
   $('loginBtn').textContent='로그인 →';
   if(!res.ok){ $('loginErr').textContent=res.msg; $('loginErr').style.display='block'; return; }
-  applySession(id, res.nickname);
+  applySession(res.uid, res.nickname);
   $('loginId').value=''; $('loginPw').value='';
   afterAuthSuccess();
 });
@@ -1280,14 +1361,14 @@ $('signupBtn').addEventListener('click', async ()=>{
   const pw = $('signupPw').value;
   const pw2 = $('signupPw2').value;
   if(!id || !nickname || !pw){ $('signupErr').textContent='빈칸 없이 다 입력해줘!'; $('signupErr').style.display='block'; return; }
-  if(pw.length < 4){ $('signupErr').textContent='비밀번호는 4자 이상으로 해줘'; $('signupErr').style.display='block'; return; }
+  if(pw.length < 6){ $('signupErr').textContent='비밀번호는 6자 이상으로 해줘'; $('signupErr').style.display='block'; return; }
   if(pw !== pw2){ $('signupErr').textContent='비밀번호가 서로 달라'; $('signupErr').style.display='block'; return; }
   $('signupErr').style.display='none';
   $('signupBtn').textContent='가입 중...';
   const res = await signUp(id, pw, nickname);
   $('signupBtn').textContent='가입하고 시작하기 →';
   if(!res.ok){ $('signupErr').textContent=res.msg; $('signupErr').style.display='block'; return; }
-  applySession(id, nickname);
+  applySession(res.uid, nickname);
   $('signupId').value=''; $('signupNickname').value=''; $('signupPw').value=''; $('signupPw2').value='';
   showToast('가입 완료! 환영해 🎉');
   afterAuthSuccess();
@@ -1311,7 +1392,8 @@ $('createBtn').addEventListener('click', async ()=>{
   const rn = $('newRoomName').value.trim();
   if(!rn){ $('createErr').style.display='block'; return; }
   $('createErr').style.display='none';
-  if(!fbReady){ const ok = await loadFirebase(); if(!ok){ $('createErr').textContent='서버 연결 실패 · 인터넷을 확인하고 다시 시도해줘'; $('createErr').style.display='block'; return; } }
+  const authed = await ensureAuthReady();
+  if(!authed){ $('createErr').textContent='로그인이 필요해 · 다시 로그인해줘'; $('createErr').style.display='block'; doLogout(); return; }
   let code = genCode();
   // avoid collision
   try{ const snap = await get(child(ref(db), 'rooms/'+code)); if(snap.exists()) code = genCode(); }catch(e){}
@@ -1341,7 +1423,8 @@ $('joinBtn').addEventListener('click', async ()=>{
   const code = $('joinCode').value.trim().toUpperCase();
   if(code.length !== 6){ $('joinErr').textContent='코드 6자리를 확인해줘!'; $('joinErr').style.display='block'; return; }
   $('joinErr').style.display='none';
-  if(!fbReady){ const ok = await loadFirebase(); if(!ok){ $('joinErr').textContent='서버 연결 실패 · 인터넷을 확인하고 다시 시도해줘'; $('joinErr').style.display='block'; return; } }
+  const authed = await ensureAuthReady();
+  if(!authed){ $('joinErr').textContent='로그인이 필요해 · 다시 로그인해줘'; $('joinErr').style.display='block'; doLogout(); return; }
   let snap;
   try{ snap = await get(child(ref(db), 'rooms/'+code)); }
   catch(e){ console.error(e); $('joinErr').textContent='연결 실패 · 인터넷을 확인해줘'; $('joinErr').style.display='block'; return; }
@@ -2324,8 +2407,17 @@ function proceedAfterOnboarding(){
     } else {
       goHomeOrLobby();
     }
+    // 화면은 캐시로 바로 띄우고, 진짜 Firebase 로그인 상태는 뒤에서 조용히 재확인
+    reconcileSessionInBackground();
   } else {
     showScreen('introScreen');
+  }
+}
+async function reconcileSessionInBackground(){
+  const authed = await ensureAuthReady();
+  if(!authed){
+    // 로컬엔 로그인 기록이 있는데 실제 Firebase 세션은 없음(다른 기기 데이터 지우기 등) → 다시 로그인 요청
+    if(myId){ showToast('로그인이 만료됐어 · 다시 로그인해줘'); doLogout(); }
   }
 }
 function afterAuthSuccess(){
@@ -2422,7 +2514,10 @@ if(!hasSeenOnboarding()){
 } else {
   proceedAfterOnboarding();
 }
-loadFirebase().then(ok=>{ if(!ok) console.warn('Firebase 준비 실패 - 방 생성/입장 시 재시도함'); });
+loadFirebase().then(ok=>{
+  if(!ok){ console.warn('Firebase 준비 실패 - 방 생성/입장 시 재시도함'); return; }
+  checkGoogleRedirectResult();
+});
 
 // PWA: 서비스워커 등록 (설치 가능한 앱처럼 동작)
 if('serviceWorker' in navigator){
