@@ -28,7 +28,6 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
 <style>
   :root{
     --bg:#EFEBFB; --bg2:#F5F3FC;
@@ -428,11 +427,7 @@
 
   .map-wrap{ position:relative; flex:1 1 auto; min-height:0; }
   #map{ position:absolute; inset:0; z-index:0; background:#E8EBF0; }
-  #map .leaflet-tile-pane{ filter:none; }
-  .leaflet-control-zoom{ border:none !important; box-shadow:0 2px 6px rgba(23,25,35,0.08) !important; border-radius:12px !important; overflow:hidden; margin:12px !important; }
-  .leaflet-control-zoom a{ width:34px !important; height:34px !important; line-height:34px !important; color:var(--text) !important; background:var(--surface-strong) !important; backdrop-filter:blur(var(--blur)); }
-  .leaflet-control-zoom a:hover{ background:var(--accent-soft) !important; }
-  .locate-btn{ width:38px; height:38px; border-radius:11px; border:1px solid var(--border); background:var(--surface-strong); backdrop-filter:blur(var(--blur)); -webkit-backdrop-filter:blur(var(--blur)); box-shadow:0 2px 6px rgba(23,25,35,0.08); font-size:1.1rem; cursor:pointer; display:flex; align-items:center; justify-content:center; margin-top:6px; }
+  .locate-btn{ width:38px; height:38px; border-radius:11px; border:1px solid var(--border); background:var(--surface-strong); backdrop-filter:blur(var(--blur)); -webkit-backdrop-filter:blur(var(--blur)); box-shadow:0 2px 6px rgba(23,25,35,0.08); font-size:1.1rem; cursor:pointer; display:flex; align-items:center; justify-content:center; }
   .locate-btn:active{ background:var(--accent-soft); }
 
   .search-wrap{ position:absolute; top:12px; left:12px; right:12px; z-index:10; }
@@ -455,8 +450,9 @@
   .pin.final-pin{ border-color:#F7931E; box-shadow:0 0 0 4px rgba(247,147,30,0.4), 0 3px 8px rgba(0,0,0,0.3); }
   @keyframes drop{ to{ transform:rotate(-45deg) scale(1); } }
   .pin span{ transform:rotate(45deg); color:#fff; font-size:13px; font-weight:700; }
-  .lf-popup .leaflet-popup-content-wrapper{ border-radius:15px; box-shadow:var(--shadow-lg); background:var(--sheet-bg); backdrop-filter:blur(var(--blur)); color:var(--text); }
-  .lf-popup .leaflet-popup-tip{ background:var(--sheet-bg); }
+  .temp-marker-dot{ width:22px; height:22px; border-radius:50%; background:rgba(91,91,214,0.22); border:3px solid #5B5BD6; box-sizing:border-box; }
+  .my-loc-dot{ width:16px; height:16px; border-radius:50%; background:#2F80ED; border:3px solid #fff; box-shadow:0 1px 4px rgba(0,0,0,0.3); box-sizing:border-box; }
+  .naver-iw{ border-radius:15px; box-shadow:var(--shadow-lg); background:var(--sheet-bg); backdrop-filter:blur(var(--blur)); -webkit-backdrop-filter:blur(var(--blur)); color:var(--text); padding:12px 14px; max-width:220px; border:1px solid var(--border); }
   .pop-name{ font-weight:700; font-size:0.92rem; margin-bottom:3px; }
   .pop-memo{ font-size:0.8rem; color:var(--text-soft); margin-bottom:4px; }
   .pop-meta{ font-size:0.72rem; color:#A2A7B2; }
@@ -1119,7 +1115,7 @@
   </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=dlcc7tf129"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
 <script type="module">
 
@@ -1210,6 +1206,11 @@ function forgetRoom(code){ saveMyRooms(getMyRooms().filter(r=> r.code !== code))
 
 /* ================= utils ================= */
 const $ = (id)=> document.getElementById(id);
+window.navermap_authFailure = function(){
+  console.error('네이버 지도 인증 실패 - Client ID를 확인해줘');
+  const mapEl = document.getElementById('map');
+  if(mapEl) mapEl.innerHTML = '<div style="padding:40px 20px; text-align:center; color:#767C8A; font-size:0.85rem; line-height:1.7;">지도 인증에 실패했어 😥<br>네이버 지도 Client ID 설정을 확인해줘</div>';
+};
 function escapeHtml(str){ return (str||'').replace(/[&<>"']/g, s=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s])); }
 function initials(n){ return (n||'?').trim().charAt(0).toUpperCase(); }
 let toastTimer=null;
@@ -1626,7 +1627,7 @@ function enterRoom(){
   $('hRoomCode').textContent = roomCode;
   $('roomLoading').classList.remove('hide');
   if(!map) initMap();
-  setTimeout(()=> map.invalidateSize(), 250);
+  setTimeout(()=> mapResize(), 250);
 
   if(unsubRoom) unsubRoom();
   const rRef = ref(db, 'rooms/'+roomCode);
@@ -2044,23 +2045,23 @@ function renderMemberLocations(locs){
   Object.values(locs).forEach(loc=>{
     if(loc.id === myId) return; // 내 위치는 지도에 다시 안 그림 (locate-btn과 별개)
     seen.add(loc.id);
-    const icon = L.divIcon({
-      className:'', html:`<div class="member-pin"><div class="mp-ring" style="border-color:${loc.color||'#5B5BD6'}"></div><div class="mp-avatar" style="background:${loc.color||'#5B5BD6'}">${initials(loc.nickname)}</div></div>`,
-      iconSize:[34,34], iconAnchor:[17,17]
-    });
+    const icon = {
+      content: `<div class="member-pin"><div class="mp-ring" style="border-color:${loc.color||'#5B5BD6'}"></div><div class="mp-avatar" style="background:${loc.color||'#5B5BD6'}">${initials(loc.nickname)}</div></div>`,
+      size: new naver.maps.Size(34,34), anchor: new naver.maps.Point(17,17)
+    };
     if(memberLocMarkers[loc.id]){
-      memberLocMarkers[loc.id].setLatLng([loc.lat, loc.lng]);
+      memberLocMarkers[loc.id].setPosition(new naver.maps.LatLng(loc.lat, loc.lng));
       memberLocMarkers[loc.id].setIcon(icon);
     } else {
-      memberLocMarkers[loc.id] = L.marker([loc.lat, loc.lng], { icon, interactive:false, zIndexOffset:500 }).addTo(map);
+      memberLocMarkers[loc.id] = new naver.maps.Marker({ position:new naver.maps.LatLng(loc.lat,loc.lng), map:map, icon, zIndex:500 });
     }
   });
   Object.keys(memberLocMarkers).forEach(id=>{
-    if(!seen.has(id)){ map.removeLayer(memberLocMarkers[id]); delete memberLocMarkers[id]; }
+    if(!seen.has(id)){ memberLocMarkers[id].setMap(null); delete memberLocMarkers[id]; }
   });
 }
 function clearMemberLocMarkers(){
-  Object.values(memberLocMarkers).forEach(m=> map.removeLayer(m));
+  Object.values(memberLocMarkers).forEach(m=> m.setMap(null));
   memberLocMarkers = {};
 }
 
@@ -2091,27 +2092,57 @@ function checkReminderBanner(){
 }
 $('bannerClose').addEventListener('click', ()=> $('banner').classList.remove('show'));
 
-/* ================= markers ================= */
+/* ================= markers (네이버 지도) ================= */
+function toNLatLng(obj){ return new naver.maps.LatLng(obj.lat, obj.lng); }
+let sharedInfoWindow = null;
+function getInfoWindow(){
+  if(!sharedInfoWindow){
+    sharedInfoWindow = new naver.maps.InfoWindow({ content:'<div></div>', borderWidth:0, backgroundColor:'transparent', disableAnchor:true, pixelOffset:new naver.maps.Point(0,-6) });
+  }
+  return sharedInfoWindow;
+}
+function placePopupContent(p, isFinal){
+  return `<div class="naver-iw"><div class="pop-name">${escapeHtml(p.name)} ${isFinal?'✅':''}</div>` +
+    (p.memo ? `<div class="pop-memo">${escapeHtml(p.memo)}</div>` : '') +
+    `<div class="pop-meta">${escapeHtml(p.author)} · 👍 ${countVotes(p)}</div></div>`;
+}
 function makeIcon(color, name, isFinal){
-  return L.divIcon({ className:'', html:`<div class="pin ${isFinal?'final-pin':''}" style="background:${color}"><span>${initials(name)}</span></div>`, iconSize:[32,32], iconAnchor:[16,30], popupAnchor:[0,-28] });
+  return {
+    content: `<div class="pin ${isFinal?'final-pin':''}" style="background:${color}"><span>${initials(name)}</span></div>`,
+    size: new naver.maps.Size(32,32),
+    anchor: new naver.maps.Point(16,30)
+  };
 }
 function renderMarkers(){
-  Object.values(markers).forEach(m=>map.removeLayer(m));
+  Object.values(markers).forEach(m=> m.setMap(null));
   markers = {};
   Object.values(places).forEach(p=>{
     const isFinal = room.finalPlaceId === p.id;
-    const marker = L.marker([p.lat,p.lng], {icon: makeIcon(p.color, p.author, isFinal)}).addTo(map);
-    marker.bindPopup(
-      `<div class="pop-name">${escapeHtml(p.name)} ${isFinal?'✅':''}</div>` +
-      (p.memo ? `<div class="pop-memo">${escapeHtml(p.memo)}</div>` : '') +
-      `<div class="pop-meta">${escapeHtml(p.author)} · 👍 ${countVotes(p)}</div>`,
-      { className:'lf-popup' }
-    );
+    const marker = new naver.maps.Marker({
+      position: toNLatLng(p), map: map,
+      icon: makeIcon(p.color, p.author, isFinal)
+    });
+    naver.maps.Event.addListener(marker, 'click', ()=> openMarkerPopup(p.id));
     markers[p.id] = marker;
   });
 }
-function showTempMarker(lat,lng){ clearTempMarker(); tempMarker = L.circleMarker([lat,lng], { radius:11, color:'#5B5BD6', weight:3, fillColor:'#5B5BD6', fillOpacity:0.22, interactive:false }).addTo(map); }
-function clearTempMarker(){ if(tempMarker){ map.removeLayer(tempMarker); tempMarker=null; } }
+function openMarkerPopup(id){
+  const mk = markers[id], p = places[id];
+  if(!mk || !p) return;
+  const isFinal = room.finalPlaceId === p.id;
+  const iw = getInfoWindow();
+  iw.setContent(placePopupContent(p, isFinal));
+  iw.open(map, mk);
+}
+function showTempMarker(lat,lng){
+  clearTempMarker();
+  tempMarker = new naver.maps.Marker({
+    position: new naver.maps.LatLng(lat,lng), map: map,
+    icon: { content:'<div class="temp-marker-dot"></div>', size:new naver.maps.Size(22,22), anchor:new naver.maps.Point(11,11) },
+    zIndex: 50
+  });
+}
+function clearTempMarker(){ if(tempMarker){ tempMarker.setMap(null); tempMarker=null; } }
 
 /* ================= counts ================= */
 function countVotes(p){ return p.votes ? Object.keys(p.votes).length : 0; }
@@ -2180,8 +2211,8 @@ function renderList(){
       // 패널 접고 지도 보여주기
       document.querySelector('.panel').classList.remove('expanded');
       setTimeout(()=>{
-        if(map){ map.invalidateSize(); map.flyTo([p.lat,p.lng], 16, {duration:0.8}); }
-        const mk = markers[id]; if(mk){ setTimeout(()=> mk.openPopup(), 850); }
+        if(map){ mapResize(); map.morph(toNLatLng(p), 16, { duration:800 }); }
+        setTimeout(()=> openMarkerPopup(id), 850);
       }, 200);
     });
   });
@@ -2246,7 +2277,7 @@ function renderResultItems(list){
   document.querySelectorAll('.sr-item[data-lat]').forEach(el=>{
     el.addEventListener('click', ()=>{
       const lat=parseFloat(el.dataset.lat), lng=parseFloat(el.dataset.lng), nm=el.dataset.name;
-      map.flyTo([lat,lng],16,{duration:0.8}); hideResults(); clearSearch();
+      map.morph(new naver.maps.LatLng(lat,lng), 16, { duration:800 }); hideResults(); clearSearch();
       setTimeout(()=> openAdd({lat,lng}, nm), 700);
     });
   });
@@ -2313,7 +2344,7 @@ function closeAdd(){
   pendingLatLng=null;
   clearTempMarker();
   // 지도 상호작용 확실히 복구
-  if(map){ setTimeout(()=>{ map.invalidateSize(); if(map.dragging) map.dragging.enable(); }, 50); }
+  if(map){ setTimeout(()=> mapResize(), 50); }
 }
 function saveAdd(){
   const name=$('placeName').value.trim();
@@ -2327,7 +2358,7 @@ function saveAdd(){
     .catch(e=>{ console.error(e); showToast('추가 실패 · 인터넷 확인'); });
   closeAdd();
 }
-function flyToPlace(p){ if(p && map) map.flyTo([p.lat,p.lng], 16, {duration:0.8}); }
+function flyToPlace(p){ if(p && map) map.morph(toNLatLng(p), 16, { duration:800 }); }
 
 /* ================= settings ================= */
 function openSettings(){
@@ -2409,45 +2440,44 @@ function leaveRoom(){
   goHomeOrLobby();
 }
 
-/* ================= map init ================= */
+/* ================= map init (네이버 지도) ================= */
+function mapResize(){
+  if(!map) return;
+  try{ naver.maps.Event.trigger(map, 'resize'); }catch(e){}
+}
+function addMapControlButton(id, emoji, title, position, onClick){
+  const html = `<div style="margin:8px;"><button id="${id}" class="locate-btn" title="${title}">${emoji}</button></div>`;
+  const ctrl = new naver.maps.CustomControl(html, { position });
+  ctrl.setMap(map);
+  const el = document.getElementById(id);
+  if(el) el.addEventListener('click', (e)=>{ e.stopPropagation(); onClick(); });
+  return el;
+}
 function initMap(){
-  map = L.map('map', { zoomControl:false, attributionControl:true }).setView(SCHOOL, 16);
-  L.control.zoom({ position:'bottomleft' }).addTo(map);
-  L.tileLayer('https://tiles.stadiamaps.com/tiles/osm_bright/{z}/{x}/{y}{r}.png?api_key=02b979b3-769b-4591-adac-f99406ed63fb', { maxZoom:20, attribution:'&copy; Stadia Maps, &copy; OpenMapTiles, &copy; OpenStreetMap contributors' }).addTo(map);
-  map.on('click', (e)=>{
+  if(typeof naver === 'undefined' || !naver.maps){
+    $('map').innerHTML = '<div style="padding:40px 20px; text-align:center; color:var(--text-soft); font-size:0.85rem; line-height:1.7;">지도를 불러오지 못했어 😥<br>네이버 지도 API 키 설정을 확인해줘</div>';
+    return;
+  }
+  map = new naver.maps.Map('map', {
+    center: new naver.maps.LatLng(SCHOOL[0], SCHOOL[1]),
+    zoom: 16,
+    zoomControl: true,
+    zoomControlOptions: { position: naver.maps.Position.BOTTOM_LEFT }
+  });
+
+  naver.maps.Event.addListener(map, 'click', (e)=>{
+    const latlng = { lat: e.coord.y, lng: e.coord.x };
     if($('addOverlay').classList.contains('show')){
       const kn=$('placeName').value, km=$('placeMemo').value;
-      openAdd(e.latlng, kn); $('placeMemo').value=km;
-    } else { openAdd(e.latlng); }
+      openAdd(latlng, kn); $('placeMemo').value=km;
+    } else { openAdd(latlng); }
   });
-  map.on('movestart', hideResults);
+  naver.maps.Event.addListener(map, 'dragstart', hideResults);
 
   // 현재 위치로 지도 이동 버튼 (검색창과 안 겹치게 하단에 배치)
-  const LocateControl = L.Control.extend({
-    options:{ position:'bottomright' },
-    onAdd:function(){
-      const btn = L.DomUtil.create('button', 'locate-btn');
-      btn.innerHTML = '📍';
-      btn.title = '현재 위치';
-      L.DomEvent.on(btn, 'click', (e)=>{ L.DomEvent.stop(e); goToMyLocation(); });
-      return btn;
-    }
-  });
-  map.addControl(new LocateControl());
-
-  // 내 위치를 멤버들과 실시간 공유하는 토글 버튼 (검색창과 안 겹치게 하단에 배치)
-  const ShareLocControl = L.Control.extend({
-    options:{ position:'bottomright' },
-    onAdd:function(){
-      const btn = L.DomUtil.create('button', 'locate-btn');
-      btn.id = 'shareLocBtn';
-      btn.innerHTML = '📡';
-      btn.title = '내 위치 실시간 공유';
-      L.DomEvent.on(btn, 'click', (e)=>{ L.DomEvent.stop(e); onShareLocBtnClick(); });
-      return btn;
-    }
-  });
-  map.addControl(new ShareLocControl());
+  addMapControlButton('locateMapBtn', '📍', '현재 위치', naver.maps.Position.BOTTOM_RIGHT, goToMyLocation);
+  // 내 위치를 멤버들과 실시간 공유하는 토글 버튼
+  addMapControlButton('shareLocBtn', '📡', '내 위치 실시간 공유', naver.maps.Position.BOTTOM_RIGHT, onShareLocBtnClick);
 
   // 시작 시 현재 위치로 이동 시도 (권한 거부/실패 시 목운중 유지)
   goToMyLocation(true);
@@ -2461,9 +2491,13 @@ function goToMyLocation(silent){
     (pos)=>{
       const lat = pos.coords.latitude, lng = pos.coords.longitude;
       cacheCoords(lat, lng);
-      map.flyTo([lat,lng], 16, {duration:0.8});
-      if(myLocMarker) map.removeLayer(myLocMarker);
-      myLocMarker = L.circleMarker([lat,lng], { radius:8, color:'#fff', weight:3, fillColor:'#2F80ED', fillOpacity:1, interactive:false }).addTo(map);
+      map.morph(new naver.maps.LatLng(lat,lng), 16, { duration:800 });
+      if(myLocMarker) myLocMarker.setMap(null);
+      myLocMarker = new naver.maps.Marker({
+        position: new naver.maps.LatLng(lat,lng), map: map,
+        icon: { content:'<div class="my-loc-dot"></div>', size:new naver.maps.Size(16,16), anchor:new naver.maps.Point(8,8) },
+        zIndex: 40
+      });
     },
     (err)=>{ if(!silent) showToast('위치를 가져오지 못했어 · 권한을 확인해줘'); },
     { enableHighAccuracy:true, timeout:8000, maximumAge:60000 }
@@ -2548,7 +2582,7 @@ $('searchInput').addEventListener('input', onSearchInput);
       if(h >= mid){ panel.classList.add('expanded'); }
       else { panel.classList.remove('expanded'); }
     }
-    setTimeout(()=>{ if(map) map.invalidateSize(); }, 340);
+    setTimeout(()=> mapResize(), 340);
   }
   grip.addEventListener('touchstart', down, {passive:false});
   grip.addEventListener('touchmove', move, {passive:false});
