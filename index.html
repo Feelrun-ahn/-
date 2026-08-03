@@ -61,32 +61,73 @@
   button{ font-family:inherit; cursor:pointer; }
   .hidden{ display:none !important; }
 
-  /* ===== 시작 스플래시 (아이콘만, 글자 없음) ===== */
+  /* ===== 시작 스플래시: 지도에 핀들이 통통 튀며 꽂히는 연출 ===== */
   #splashScreen{
     position:fixed; inset:0; z-index:9999;
-    display:flex; align-items:center; justify-content:center;
-    background:radial-gradient(120% 100% at 50% 0%, var(--bg2), var(--bg));
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:22px;
+    background:var(--bg);
     transition:opacity 0.5s ease;
   }
   #splashScreen.fade-out{ opacity:0; pointer-events:none; }
-  .splash-icon{
-    width:116px; height:116px; border-radius:30px;
-    box-shadow:0 22px 54px rgba(91,91,214,0.4);
-    opacity:0;
-    animation:splashPop 0.85s cubic-bezier(0.34,1.56,0.64,1) both, splashFloat 1.7s ease-in-out 0.85s infinite;
+
+  .splash-map{
+    position:relative; width:250px; height:250px; border-radius:46px;
+    background:var(--bg2); border:1px solid var(--border); overflow:hidden;
+    box-shadow:0 26px 60px rgba(91,91,214,0.32);
+    opacity:0; transform:scale(0.9);
+    animation:mapIn 0.5s cubic-bezier(0.22,1,0.36,1) forwards;
   }
-  .splash-icon.dark{ display:none; }
-  html[data-theme="dark"] .splash-icon.light{ display:none; }
-  html[data-theme="dark"] .splash-icon.dark{ display:block; }
-  @keyframes splashPop{
-    0%{ transform:scale(0.25) rotate(-18deg); opacity:0; }
-    55%{ transform:scale(1.12) rotate(4deg); opacity:1; }
-    75%{ transform:scale(0.96) rotate(-1deg); }
-    100%{ transform:scale(1) rotate(0deg); opacity:1; }
+  @keyframes mapIn{ to{ opacity:1; transform:scale(1); } }
+
+  .sm-block{ position:absolute; }
+  .sm-block.bA{
+    width:100%; height:100%; top:0; left:0;
+    background:var(--accent-soft);
+    clip-path:polygon(28% 0%, 62% 0%, 20% 46%, 0% 34%, 0% 0%);
   }
-  @keyframes splashFloat{
-    0%,100%{ transform:translateY(0) scale(1); }
-    50%{ transform:translateY(-10px) scale(1.03); }
+  .sm-block.bB{
+    width:100%; height:100%; top:0; left:0;
+    background:var(--blob2, var(--accent-soft));
+    opacity:0.8;
+    clip-path:polygon(78% 0%, 100% 0%, 100% 30%, 88% 42%);
+  }
+  .sm-road{
+    position:absolute; width:320px; height:32px; background:var(--surface); opacity:0.9;
+    left:-52px; top:58%; transform:rotate(-15deg);
+  }
+
+  .splash-wordmark{
+    font-size:1.5rem; font-weight:800; letter-spacing:-0.02em; color:var(--text);
+    opacity:0; transform:translateY(10px);
+    animation:wordmarkIn 0.6s cubic-bezier(0.22,1,0.36,1) 2.55s forwards;
+  }
+  @keyframes wordmarkIn{ to{ opacity:1; transform:translateY(0); } }
+
+  .sm-pin{ position:absolute; }
+  .sm-pin.sp1, .sm-pin.sp2, .sm-pin.sp3, .sm-pin.hero{ transform:translate(-50%,-100%); }
+  .sm-pin .pin-svg{
+    display:block; opacity:0; filter:drop-shadow(0 6px 10px rgba(0,0,0,0.26));
+    transform-origin:bottom center;
+    animation:pinDrop 0.8s cubic-bezier(0.32,1.7,0.5,1) forwards;
+  }
+  .sm-pin.sp1 .pin-svg{ animation-delay:0.55s; }
+  .sm-pin.sp2 .pin-svg{ animation-delay:0.85s; }
+  .sm-pin.sp3 .pin-svg{ animation-delay:1.15s; }
+  .sm-pin.hero .pin-svg{
+    animation-delay:1.55s; animation-duration:0.9s;
+    animation-name:heroDrop; filter:drop-shadow(0 16px 28px rgba(91,91,214,0.45));
+  }
+  @keyframes pinDrop{
+    0%{ opacity:0; transform:translateY(-90px) scale(0.4); }
+    60%{ opacity:1; transform:translateY(6px) scale(1.16); }
+    80%{ transform:translateY(-4px) scale(0.94); }
+    100%{ opacity:1; transform:translateY(0) scale(1); }
+  }
+  @keyframes heroDrop{
+    0%{ opacity:0; transform:translateY(-120px) scale(0.4) rotate(-6deg); }
+    60%{ opacity:1; transform:translateY(8px) scale(1.14) rotate(2deg); }
+    80%{ transform:translateY(-5px) scale(0.95) rotate(-1deg); }
+    100%{ opacity:1; transform:translateY(0) scale(1) rotate(0); }
   }
   .theme-toggle{
     width:40px; height:40px; border-radius:13px; border:1px solid var(--border);
@@ -99,31 +140,62 @@
   /* ============ LOBBY / GATE SCREENS ============ */
   .screen{
     position:fixed; inset:0; z-index:4000; display:flex; align-items:center; justify-content:center; padding:26px 22px;
-    background:radial-gradient(120% 100% at 50% 0%, var(--bg2), var(--bg));
+    background:var(--bg);
     overflow-x:hidden; overflow-y:auto; transition:background 0.35s ease;
   }
-  .screen::before, .screen::after{
-    content:""; position:absolute; border-radius:50%; pointer-events:none; z-index:0;
-    animation:blob 16s ease-in-out infinite;
-  }
-  .screen::before{ top:-90px; left:-70px; width:280px; height:280px; background:radial-gradient(circle at 30% 30%, var(--blob1), transparent 70%); filter:blur(24px); }
-  .screen::after{ bottom:-60px; right:-80px; width:300px; height:300px; background:radial-gradient(circle at 60% 40%, var(--blob2), transparent 70%); filter:blur(28px); animation-direction:reverse; animation-duration:20s; }
-  @keyframes blob{ 0%,100%{ transform:translate(0,0) scale(1); } 50%{ transform:translate(18px,-22px) scale(1.1); } }
   @keyframes gradientShift{ 0%{background-position:0% 50%;} 50%{background-position:100% 50%;} 100%{background-position:0% 50%;} }
 
   /* 내 모임 홈 - 중앙 카드 대신 화면 전체를 채우는 레이아웃 */
   #homeScreen{ padding:0; align-items:stretch; justify-content:flex-start; }
   .home-wrap{ display:flex; flex-direction:column; height:100%; width:100%; position:relative; z-index:1; }
-  .home-header{ background:var(--surface-strong); backdrop-filter:blur(var(--blur)); -webkit-backdrop-filter:blur(var(--blur)); padding:18px 20px 16px; border-bottom:1px solid var(--border); flex-shrink:0; display:flex; align-items:center; justify-content:space-between; }
-  .home-header .brand{ display:flex; align-items:center; gap:11px; }
-  .home-header .logo{ width:38px; height:38px; border-radius:12px; background:linear-gradient(135deg,var(--accent),var(--accent-2)); color:#fff; display:flex; align-items:center; justify-content:center; font-size:19px; box-shadow:0 4px 10px rgba(91,91,214,0.35); flex-shrink:0; }
-  .home-header .name{ font-weight:900; font-size:1.35rem; letter-spacing:-0.4px; }
-  .home-header .sub{ font-size:0.8rem; color:var(--text-soft); font-weight:600; margin-top:2px; }
-  .home-list{ flex:1; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:16px 18px 10px; display:flex; flex-direction:column; }
-  .home-footer{ flex-shrink:0; padding:14px 18px calc(16px + env(safe-area-inset-bottom)); background:var(--surface-strong); backdrop-filter:blur(var(--blur)); -webkit-backdrop-filter:blur(var(--blur)); border-top:1px solid var(--border); display:flex; gap:10px; }
-  .home-footer .big-btn{ margin-top:0; }
-  .room-empty-full{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; color:var(--text-soft); font-size:0.9rem; line-height:1.8; gap:6px; }
-  .room-empty-full .big{ font-size:2.6rem; }
+  .home-header{ padding:22px 22px 8px; flex-shrink:0; display:flex; align-items:center; justify-content:space-between; }
+  .home-eyebrow{ margin:0 0 2px; font-size:0.84rem; font-weight:600; color:var(--text-soft); }
+  .home-title{ margin:0; font-size:1.65rem; font-weight:800; color:var(--text); letter-spacing:-0.3px; }
+  .home-list{ flex:1; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:12px 22px 20px; display:flex; flex-direction:column; }
+  .home-footer{
+    flex-shrink:0; padding:14px 22px calc(18px + env(safe-area-inset-bottom));
+    background:linear-gradient(to top, var(--bg2) 55%, transparent);
+    display:flex; gap:10px;
+  }
+  .home-btn{ height:54px; border-radius:18px; font-size:0.92rem; font-weight:700; font-family:inherit; cursor:pointer; transition:transform 0.12s ease; }
+  .home-btn:active{ transform:scale(0.97); }
+  .home-btn.outline{ flex:1; border:1px solid var(--border); background:var(--surface); backdrop-filter:blur(var(--blur)); -webkit-backdrop-filter:blur(var(--blur)); color:var(--text); }
+  .home-btn.solid{ flex:1.4; border:none; background:linear-gradient(135deg,var(--accent),var(--accent-2)); color:#fff; box-shadow:0 10px 26px rgba(91,91,214,0.38); }
+  .room-empty-full{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; color:var(--text-soft); font-size:0.9rem; line-height:1.8; gap:6px; padding:60px 20px 40px; }
+  .room-empty-full .big{
+    width:120px; height:120px; border-radius:36px; background:var(--surface); backdrop-filter:blur(var(--blur));
+    border:1px solid var(--border); box-shadow:var(--shadow-md);
+    display:flex; align-items:center; justify-content:center; font-size:2.6rem; margin-bottom:8px;
+    animation:floaty 4s ease-in-out infinite;
+  }
+
+  /* ===== room card (rich, matches reference) ===== */
+  .room-card{
+    position:relative; border-radius:24px; background:var(--surface);
+    backdrop-filter:blur(var(--blur)); -webkit-backdrop-filter:blur(var(--blur));
+    border:1px solid var(--border); box-shadow:var(--shadow-md);
+    padding:18px; margin-bottom:14px; cursor:pointer; overflow:hidden;
+    transition:transform 0.12s ease;
+  }
+  .room-card:active{ transform:scale(0.98); }
+  .rc-top{ display:flex; align-items:center; gap:14px; }
+  .rc-icon{ width:52px; height:52px; flex:none; border-radius:17px; background:linear-gradient(150deg,var(--accent),var(--accent-2)); display:flex; align-items:center; justify-content:center; font-size:1.5rem; box-shadow:0 8px 18px rgba(91,91,214,0.28); }
+  .rc-body{ flex:1; min-width:0; }
+  .rc-name-row{ display:flex; align-items:center; gap:7px; margin-bottom:4px; }
+  .rc-name{ margin:0; font-size:1.02rem; font-weight:700; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .rc-meta{ margin:0; font-size:0.78rem; color:var(--text-soft); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .rc-dday{ flex:none; font-size:0.72rem; font-weight:800; padding:4px 10px; border-radius:10px; color:#fff; background:linear-gradient(135deg,var(--accent),var(--accent-2)); box-shadow:0 4px 12px rgba(91,91,214,0.3); }
+  .rc-leader-row{ display:flex; align-items:center; gap:8px; margin-top:12px; padding:10px 12px; border-radius:14px; background:var(--line); }
+  .rc-leader-row.has-leader{ background:var(--accent-soft); }
+  .rc-leader-row .rl-emoji{ font-size:1rem; }
+  .rc-leader-row .rl-text{ font-size:0.78rem; font-weight:700; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .rc-foot{ display:flex; align-items:center; gap:8px; margin-top:14px; padding-top:14px; border-top:1px solid var(--line); }
+  .rc-avatars{ display:flex; }
+  .rc-avatars span{ width:24px; height:24px; border-radius:50%; border:2px solid var(--bg2); display:flex; align-items:center; justify-content:center; font-size:0.62rem; font-weight:800; color:#fff; margin-left:-8px; }
+  .rc-avatars span:first-child{ margin-left:0; }
+  .rc-member-text{ font-size:0.72rem; color:var(--faint); margin-left:2px; }
+  .rc-place-link{ margin-left:auto; font-size:0.78rem; color:var(--text-soft); font-weight:600; white-space:nowrap; }
+  .rc-del{ position:absolute; top:14px; right:14px; width:26px; height:26px; border-radius:50%; border:none; background:var(--line); color:var(--faint); font-size:0.72rem; display:flex; align-items:center; justify-content:center; }
 
   /* ===== ONBOARDING (첫 설치 시에만) ===== */
   #onboardScreen{ padding:0; align-items:stretch; }
@@ -188,24 +260,29 @@
 
   @keyframes floatY{ 0%,100%{ transform:translateY(0) rotate(0); } 50%{ transform:translateY(-16px) rotate(4deg); } }
 
-  .lobby-actions{ display:flex; flex-direction:column; gap:11px; margin-top:6px; }
   #roomListBox{ display:flex; flex-direction:column; gap:10px; }
-  .room-item{ display:flex; align-items:center; gap:13px; padding:15px 16px; background:var(--surface); backdrop-filter:blur(var(--blur)); -webkit-backdrop-filter:blur(var(--blur)); border:1.5px solid var(--border); border-radius:18px; transition:transform 0.12s, border-color 0.2s, box-shadow 0.2s; text-align:left; width:100%; box-shadow:var(--shadow-sm); }
-  .room-item:active{ transform:scale(0.98); border-color:var(--accent); }
-  .room-item .ri-icon{ width:44px; height:44px; border-radius:13px; background:linear-gradient(135deg,var(--accent),var(--accent-2)); color:#fff; display:flex; align-items:center; justify-content:center; font-size:1.3rem; flex-shrink:0; box-shadow:0 4px 10px rgba(91,91,214,0.3); }
-  .room-item .ri-body{ flex:1; min-width:0; }
-  .room-item .ri-name{ font-weight:800; font-size:0.98rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .room-item .ri-meta{ font-size:0.74rem; color:var(--text-soft); margin-top:2px; }
-  .room-item .ri-dday{ font-size:0.72rem; font-weight:800; color:#fff; background:linear-gradient(135deg,var(--accent),var(--accent-2)); padding:4px 10px; border-radius:20px; flex-shrink:0; }
-  .room-item .ri-del{ border:none; background:none; color:#C2C6CE; font-size:1rem; padding:4px 6px; flex-shrink:0; }
-  .room-empty{ text-align:center; padding:20px 10px; color:var(--text-soft); font-size:0.85rem; line-height:1.6; }
-  .room-empty .big{ font-size:1.8rem; display:block; margin-bottom:8px; }
   .big-btn{ width:100%; border:none; border-radius:15px; padding:15px; font-size:0.98rem; font-weight:800; color:#fff; background:linear-gradient(120deg,var(--accent),#9B6BE0); box-shadow:0 8px 20px rgba(91,91,214,0.36); transition:transform 0.14s ease; display:flex; align-items:center; justify-content:center; gap:8px; }
   .big-btn:active{ transform:scale(0.97); }
   .big-btn.ghost{ background:var(--bg); color:var(--accent); box-shadow:none; border:2px solid var(--accent-soft); }
   .big-btn.google-btn{ background:var(--surface); backdrop-filter:blur(var(--blur)); color:var(--text); border:1.5px solid var(--border); box-shadow:var(--shadow-sm); display:flex; align-items:center; justify-content:center; gap:10px; }
   .or-divider{ display:flex; align-items:center; gap:10px; margin:16px 0; color:var(--faint); font-size:0.76rem; }
   .or-divider::before, .or-divider::after{ content:""; flex:1; height:1px; background:var(--border); }
+
+  /* ===== login screen (풀블리드, 참고 디자인과 동일한 레이아웃) ===== */
+  .login-wrap{ display:flex; flex-direction:column; height:100%; width:100%; }
+  .login-content{ flex:1; overflow-y:auto; padding:8px 34px 30px; display:flex; flex-direction:column; }
+  .login-icon{
+    width:76px; height:76px; border-radius:24px; background:linear-gradient(150deg,var(--accent),var(--accent-2));
+    box-shadow:0 16px 38px rgba(91,91,214,0.4); display:flex; align-items:center; justify-content:center;
+    font-size:2.1rem; margin:20px 0 22px;
+  }
+  .login-title{ margin:0 0 8px; font-size:1.55rem; font-weight:800; color:var(--text); letter-spacing:-0.02em; }
+  .login-desc{ margin:0 0 26px; font-size:0.92rem; line-height:1.6; color:var(--text-soft); }
+  .icon-input{ display:flex; align-items:center; gap:10px; height:56px; border-radius:18px; border:1px solid var(--border); background:var(--surface); backdrop-filter:blur(var(--blur)); -webkit-backdrop-filter:blur(var(--blur)); padding:0 16px; transition:border-color 0.2s ease; }
+  .icon-input:focus-within{ border-color:var(--accent); }
+  .icon-input .ii-icon{ font-size:1.05rem; color:var(--faint); flex-shrink:0; }
+  .icon-input input{ flex:1; min-width:0; border:none !important; background:transparent !important; padding:0 !important; border-radius:0 !important; font-size:0.96rem; color:var(--text); outline:none; font-family:inherit; }
+  .login-footer{ padding:14px 22px calc(18px + env(safe-area-inset-bottom)); background:linear-gradient(to top, var(--bg2) 55%, transparent); }
   .divider{ display:flex; align-items:center; gap:10px; margin:16px 0; color:#B4B9C4; font-size:0.76rem; }
   .divider::before, .divider::after{ content:""; flex:1; height:1px; background:var(--border); }
 
@@ -485,8 +562,35 @@
 </script>
 
 <div id="splashScreen">
-  <img id="splashIconLight" class="splash-icon light" src="splash-light.png" alt="">
-  <img id="splashIconDark" class="splash-icon dark" src="splash-dark.png" alt="">
+  <div class="splash-map">
+    <span class="sm-block bA"></span>
+    <span class="sm-block bB"></span>
+    <span class="sm-road"></span>
+
+    <div class="sm-pin sp1" style="left:44px; top:198px;">
+      <svg class="pin-svg" width="48" height="62" viewBox="0 0 20 26"><path d="M10 0C4.5 0 0 4.3 0 9.6 0 16.8 10 26 10 26s10-9.2 10-16.4C20 4.3 15.5 0 10 0z" fill="#7C6BF0"/></svg>
+    </div>
+    <div class="sm-pin sp2" style="left:202px; top:58px;">
+      <svg class="pin-svg" width="48" height="62" viewBox="0 0 20 26"><path d="M10 0C4.5 0 0 4.3 0 9.6 0 16.8 10 26 10 26s10-9.2 10-16.4C20 4.3 15.5 0 10 0z" fill="#6C5CE0"/></svg>
+    </div>
+    <div class="sm-pin sp3" style="left:204px; top:204px;">
+      <svg class="pin-svg" width="48" height="62" viewBox="0 0 20 26"><path d="M10 0C4.5 0 0 4.3 0 9.6 0 16.8 10 26 10 26s10-9.2 10-16.4C20 4.3 15.5 0 10 0z" fill="#A99BF5"/></svg>
+    </div>
+
+    <div class="sm-pin hero" style="left:50%; top:74%;">
+      <svg class="pin-svg" width="82" height="106" viewBox="0 0 20 26">
+        <defs>
+          <linearGradient id="splashGrad" x1="0" y1="0" x2="20" y2="26" gradientUnits="userSpaceOnUse">
+            <stop offset="0" style="stop-color:var(--accent)"/>
+            <stop offset="1" style="stop-color:var(--accent-2)"/>
+          </linearGradient>
+        </defs>
+        <path d="M10 0C4.5 0 0 4.3 0 9.6 0 16.8 10 26 10 26s10-9.2 10-16.4C20 4.3 15.5 0 10 0z" fill="url(#splashGrad)"/>
+        <circle cx="10" cy="9.6" r="4.4" fill="#fff"/>
+      </svg>
+    </div>
+  </div>
+  <div class="splash-wordmark">어디가지?</div>
 </div>
 
 <!-- ============ ONBOARDING (첫 설치 시에만) ============ -->
@@ -563,35 +667,48 @@
 
 <!-- ============ INTRO SPLASH ============ -->
 <!-- ============ LOGIN ============ -->
-<div class="screen" id="loginScreen">
-  <button class="theme-toggle" data-theme-toggle style="position:absolute; top:20px; right:22px; z-index:3;"><span class="theme-toggle-icon">🌙</span></button>
-  <div class="card">
-    <div class="brand-head">
-      <div class="brand-emoji" style="font-size:2.2rem;">📍</div>
-      <div class="brand-title" style="font-size:1.4rem;">어디가지?</div>
-      <div class="brand-sub" style="font-weight:600;">로그인하면 내 모임이 계속 이어져</div>
+<div class="screen" id="loginScreen" style="padding:0; align-items:stretch;">
+  <div class="login-wrap">
+    <div style="padding:20px 22px 0; display:flex; justify-content:flex-end;">
+      <button class="theme-toggle" data-theme-toggle><span class="theme-toggle-icon">🌙</span></button>
     </div>
-    <button class="big-btn google-btn" id="googleLoginBtn" type="button">
-      <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 3l6-6C34 5.1 29.3 3 24 3 12.4 3 3 12.4 3 24s9.4 21 21 21 21-9.4 21-21c0-1.4-.1-2.7-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 15.9 18.9 13 24 13c3.1 0 5.8 1.1 8 3l6-6C34 5.1 29.3 3 24 3c-7.7 0-14.3 4.3-17.7 10.7z"/><path fill="#4CAF50" d="M24 45c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 36.2 26.7 37 24 37c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.6 40.6 16.3 45 24 45z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.2 4.2-4.1 5.6l6.2 5.2C40.5 36 44 30.5 44 24c0-1.4-.1-2.7-.4-3.5z"/></svg>
-      <span>Google로 계속하기</span>
-    </button>
-    <div class="or-divider"><span>또는</span></div>
-    <div class="field">
-      <label>아이디</label>
-      <input id="loginId" type="text" placeholder="아이디를 입력해줘" maxlength="20" autocomplete="username">
+    <div class="login-content">
+      <div class="login-icon">📍</div>
+      <h1 class="login-title">반갑습니다 👋</h1>
+      <p class="login-desc">로그인하면 어느 기기에서든 내 모임과<br>투표 기록이 그대로 이어져요.</p>
+
+      <div class="field">
+        <label>아이디</label>
+        <div class="icon-input">
+          <span class="ii-icon">👤</span>
+          <input id="loginId" type="text" placeholder="아이디를 입력하세요" maxlength="20" autocomplete="username">
+        </div>
+      </div>
+      <div class="field">
+        <label>비밀번호</label>
+        <div class="icon-input">
+          <span class="ii-icon">🔒</span>
+          <input id="loginPw" type="password" placeholder="비밀번호를 입력하세요" maxlength="40" autocomplete="current-password">
+        </div>
+      </div>
+      <div class="err" id="loginErr">아이디와 비밀번호를 확인해줘!</div>
+
+      <div style="display:flex; align-items:center; justify-content:center; gap:16px; margin-top:8px;">
+        <button class="back-link" id="goSignup" style="padding:0;">회원가입</button>
+        <span style="width:1px; height:12px; background:var(--line);"></span>
+        <button class="back-link" id="findAccountBtn" style="padding:0;">아이디·비밀번호 찾기</button>
+      </div>
+
+      <div class="or-divider"><span>또는</span></div>
+      <button class="big-btn google-btn" id="googleLoginBtn" type="button">
+        <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 3l6-6C34 5.1 29.3 3 24 3 12.4 3 3 12.4 3 24s9.4 21 21 21 21-9.4 21-21c0-1.4-.1-2.7-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 15.9 18.9 13 24 13c3.1 0 5.8 1.1 8 3l6-6C34 5.1 29.3 3 24 3c-7.7 0-14.3 4.3-17.7 10.7z"/><path fill="#4CAF50" d="M24 45c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 36.2 26.7 37 24 37c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.6 40.6 16.3 45 24 45z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.2 4.2-4.1 5.6l6.2 5.2C40.5 36 44 30.5 44 24c0-1.4-.1-2.7-.4-3.5z"/></svg>
+        <span>Google로 계속하기</span>
+      </button>
+      <div style="text-align:center;"><button class="ob-skip" id="introReplayOb" style="margin-top:14px;">앱 소개 다시 보기</button></div>
     </div>
-    <div class="field">
-      <label>비밀번호</label>
-      <input id="loginPw" type="password" placeholder="비밀번호를 입력해줘" maxlength="40" autocomplete="current-password">
+    <div class="login-footer">
+      <button class="big-btn" id="loginBtn">로그인 →</button>
     </div>
-    <div class="err" id="loginErr">아이디와 비밀번호를 확인해줘!</div>
-    <button class="big-btn" id="loginBtn" style="margin-top:6px;">로그인 →</button>
-    <div style="display:flex; align-items:center; justify-content:center; gap:12px; margin-top:16px;">
-      <button class="back-link" id="goSignup" style="padding:0;">회원가입</button>
-      <span style="width:1px; height:12px; background:var(--line);"></span>
-      <button class="back-link" id="findAccountBtn" style="padding:0;">아이디·비밀번호 찾기</button>
-    </div>
-    <div style="text-align:center;"><button class="ob-skip" id="introReplayOb" style="margin-top:6px;">앱 소개 다시 보기</button></div>
   </div>
 </div>
 
@@ -625,12 +742,9 @@
 <div class="screen hidden" id="homeScreen">
   <div class="home-wrap">
     <div class="home-header">
-      <div class="brand">
-        <div class="logo">📍</div>
-        <div>
-          <div class="name">내 모임</div>
-          <div class="sub">참여 중인 방 목록</div>
-        </div>
+      <div>
+        <p class="home-eyebrow">📍 어디가지?</p>
+        <h1 class="home-title">내 모임</h1>
       </div>
       <button class="icon-btn" id="menuBtn" title="메뉴" style="width:44px; height:44px; border-radius:14px; background:var(--surface); backdrop-filter:blur(var(--blur)); border:1px solid var(--border); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;">
         <span style="width:18px; height:2px; border-radius:2px; background:var(--text);"></span>
@@ -640,8 +754,8 @@
     </div>
     <div class="home-list" id="roomListBox"></div>
     <div class="home-footer">
-      <button class="big-btn ghost" id="homeJoin" style="flex:1;">🔑 코드로 입장</button>
-      <button class="big-btn" id="homeCreate" style="flex:1;">➕ 새 방 만들기</button>
+      <button class="home-btn outline" id="homeJoin">코드로 입장</button>
+      <button class="home-btn solid" id="homeCreate">+ 새 방 만들기</button>
     </div>
   </div>
 </div>
@@ -1265,23 +1379,43 @@ function goHomeOrLobby(){
   renderRoomList();
   showScreen('homeScreen');
 }
+function roomDdayText(meetAt){
+  if(!meetAt) return null;
+  const meet = new Date(meetAt);
+  const now = new Date();
+  const diffDays = Math.round((new Date(meet.getFullYear(),meet.getMonth(),meet.getDate()) - new Date(now.getFullYear(),now.getMonth(),now.getDate()))/86400000);
+  if(diffDays > 0) return 'D-'+diffDays;
+  if(diffDays === 0) return 'D-DAY';
+  return '지남';
+}
 function renderRoomList(){
   const box = $('roomListBox');
   const list = getMyRooms();
   if(list.length === 0){
-    box.innerHTML = `<div class="room-empty-full"><span class="big">🗺️</span>아직 참여한 방이 없어요<br>아래 버튼으로 새 방을 만들거나<br>코드로 입장해봐</div>`;
+    box.innerHTML = `<div class="room-empty-full"><span class="big">🗺️</span>아직 참여 중인 모임이 없어요<br>새 모임을 만들거나, 친구에게 받은<br>코드로 모임에 참여해봐</div>`;
     return;
   }
   box.innerHTML = list.map(r=>`
-    <div class="room-item" data-code="${escapeHtml(r.code)}">
-      <div class="ri-icon">${escapeHtml(r.emoji || '📍')}</div>
-      <div class="ri-body">
-        <div class="ri-name">${escapeHtml(r.roomName || r.code)}</div>
-        <div class="ri-meta">코드 ${escapeHtml(r.code)} · ${escapeHtml(r.name)}(으)로 참여</div>
+    <div class="room-card" data-code="${escapeHtml(r.code)}">
+      <button class="rc-del" data-del="${escapeHtml(r.code)}" title="목록에서 제거">✕</button>
+      <div class="rc-top">
+        <div class="rc-icon">${escapeHtml(r.emoji || '📍')}</div>
+        <div class="rc-body">
+          <div class="rc-name-row"><h3 class="rc-name">${escapeHtml(r.roomName || r.code)}</h3></div>
+          <p class="rc-meta" data-meta>코드 ${escapeHtml(r.code)}</p>
+        </div>
+        <div class="rc-dday hidden" data-dday></div>
       </div>
-      <button class="ri-del" data-del="${escapeHtml(r.code)}" title="목록에서 제거">✕</button>
+      <div class="rc-leader-row hidden" data-leader>
+        <span class="rl-emoji">🗳️</span><span class="rl-text"></span>
+      </div>
+      <div class="rc-foot">
+        <div class="rc-avatars" data-avatars></div>
+        <span class="rc-member-text" data-member></span>
+        <span class="rc-place-link" data-places></span>
+      </div>
     </div>`).join('');
-  box.querySelectorAll('.room-item').forEach(el=>{
+  box.querySelectorAll('.room-card').forEach(el=>{
     el.addEventListener('click', (e)=>{
       if(e.target.closest('[data-del]')) return;
       quickEnter(el.dataset.code);
@@ -1290,6 +1424,48 @@ function renderRoomList(){
   box.querySelectorAll('[data-del]').forEach(btn=>{
     btn.addEventListener('click', (e)=>{ e.stopPropagation(); forgetRoom(btn.dataset.del); renderRoomList(); });
   });
+  // 디데이·1위 후보·인원·후보수는 백그라운드에서 하나씩 채워넣기 (목록은 즉시 뜸)
+  list.forEach(r=> enrichRoomCard(r.code));
+}
+async function enrichRoomCard(code){
+  if(!fbReady){ const ok = await loadFirebase(); if(!ok) return; }
+  let snap;
+  try{ snap = await get(child(ref(db), 'rooms/'+code)); }catch(e){ return; }
+  const card = document.querySelector(`.room-card[data-code="${CSS.escape(code)}"]`);
+  if(!card) return;
+  if(!snap.exists()){ const m=card.querySelector('[data-meta]'); if(m) m.textContent='삭제된 방이야'; return; }
+  const room = snap.val();
+  const places = room.places ? Object.values(room.places) : [];
+  const members = room.members ? Object.values(room.members) : [];
+
+  const dateTxt = room.meetAt ? new Date(room.meetAt).toLocaleDateString('ko-KR',{month:'long',day:'numeric'}) : '날짜 미정';
+  const metaEl = card.querySelector('[data-meta]');
+  if(metaEl) metaEl.textContent = `${dateTxt} · 후보 ${places.length}곳`;
+
+  const dday = roomDdayText(room.meetAt);
+  if(dday){ const el=card.querySelector('[data-dday]'); if(el){ el.textContent=dday; el.classList.remove('hidden'); } }
+
+  const leaderRow = card.querySelector('[data-leader]');
+  if(leaderRow && places.length){
+    const sorted = [...places].sort((a,b)=> (b.votes?Object.keys(b.votes).length:0) - (a.votes?Object.keys(a.votes).length:0));
+    const top = sorted[0];
+    const topVotes = top.votes ? Object.keys(top.votes).length : 0;
+    leaderRow.classList.remove('hidden');
+    const emojiEl = leaderRow.querySelector('.rl-emoji'), textEl = leaderRow.querySelector('.rl-text');
+    if(topVotes>0){
+      leaderRow.classList.add('has-leader');
+      emojiEl.textContent='📍'; textEl.textContent = `현재 1위 · ${top.name}`;
+    } else {
+      emojiEl.textContent='🗳️'; textEl.textContent = '아직 투표 전이에요';
+    }
+  }
+
+  const avEl = card.querySelector('[data-avatars]');
+  if(avEl) avEl.innerHTML = members.slice(0,4).map(m=> `<span style="background:${colorForName(m.id||m.nickname)}">${initials(m.nickname)}</span>`).join('');
+  const memberEl = card.querySelector('[data-member]');
+  if(memberEl) memberEl.textContent = members.length + '명 참여';
+  const placesEl = card.querySelector('[data-places]');
+  if(placesEl) placesEl.textContent = `후보 ${places.length}곳 →`;
 }
 async function quickEnter(code){
   const authed = await ensureAuthReady();
@@ -2487,7 +2663,7 @@ $('locShareConfirm').addEventListener('click', startSharingLocation);
 $('locShareOverlay').addEventListener('click', (e)=>{ if(e.target.id==='locShareOverlay') $('locShareOverlay').classList.remove('show'); });
 
 /* ---- 시작 스플래시 제거 (최소 노출 시간 보장) ---- */
-const SPLASH_MIN_MS = 1250;
+const SPLASH_MIN_MS = 3350;
 const splashStartTs = Date.now();
 function hideSplash(){
   const el = $('splashScreen');
