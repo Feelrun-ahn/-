@@ -2463,32 +2463,37 @@ function addMapControlButton(id, emoji, title, position, onClick){
 }
 function initMap(){
   if(typeof naver === 'undefined' || !naver.maps){
-    $('map').innerHTML = '<div style="padding:40px 20px; text-align:center; color:var(--text-soft); font-size:0.85rem; line-height:1.7;">지도를 불러오지 못했어 😥<br>네이버 지도 API 키 설정을 확인해줘</div>';
+    $('map').innerHTML = '<div style="padding:40px 20px; text-align:center; color:var(--text-soft); font-size:0.85rem; line-height:1.7;">지도 스크립트 자체가 안 불러와졌어 😥<br>(naver 객체가 없음 · 네트워크 또는 스크립트 태그 확인)</div>';
     return;
   }
-  map = new naver.maps.Map('map', {
-    center: new naver.maps.LatLng(SCHOOL[0], SCHOOL[1]),
-    zoom: 16,
-    zoomControl: true,
-    zoomControlOptions: { position: naver.maps.Position.BOTTOM_LEFT }
-  });
+  try{
+    map = new naver.maps.Map('map', {
+      center: new naver.maps.LatLng(SCHOOL[0], SCHOOL[1]),
+      zoom: 16,
+      zoomControl: true,
+      zoomControlOptions: { position: naver.maps.Position.BOTTOM_LEFT }
+    });
 
-  naver.maps.Event.addListener(map, 'click', (e)=>{
-    const latlng = { lat: e.coord.y, lng: e.coord.x };
-    if($('addOverlay').classList.contains('show')){
-      const kn=$('placeName').value, km=$('placeMemo').value;
-      openAdd(latlng, kn); $('placeMemo').value=km;
-    } else { openAdd(latlng); }
-  });
-  naver.maps.Event.addListener(map, 'dragstart', hideResults);
+    naver.maps.Event.addListener(map, 'click', (e)=>{
+      const latlng = { lat: e.coord.y, lng: e.coord.x };
+      if($('addOverlay').classList.contains('show')){
+        const kn=$('placeName').value, km=$('placeMemo').value;
+        openAdd(latlng, kn); $('placeMemo').value=km;
+      } else { openAdd(latlng); }
+    });
+    naver.maps.Event.addListener(map, 'dragstart', hideResults);
 
-  // 현재 위치로 지도 이동 버튼 (검색창과 안 겹치게 하단에 배치)
-  addMapControlButton('locateMapBtn', '📍', '현재 위치', naver.maps.Position.BOTTOM_RIGHT, goToMyLocation);
-  // 내 위치를 멤버들과 실시간 공유하는 토글 버튼
-  addMapControlButton('shareLocBtn', '📡', '내 위치 실시간 공유', naver.maps.Position.BOTTOM_RIGHT, onShareLocBtnClick);
+    // 현재 위치로 지도 이동 버튼 (검색창과 안 겹치게 하단에 배치)
+    addMapControlButton('locateMapBtn', '📍', '현재 위치', naver.maps.Position.BOTTOM_RIGHT, goToMyLocation);
+    // 내 위치를 멤버들과 실시간 공유하는 토글 버튼
+    addMapControlButton('shareLocBtn', '📡', '내 위치 실시간 공유', naver.maps.Position.BOTTOM_RIGHT, onShareLocBtnClick);
 
-  // 시작 시 현재 위치로 이동 시도 (권한 거부/실패 시 목운중 유지)
-  goToMyLocation(true);
+    // 시작 시 현재 위치로 이동 시도 (권한 거부/실패 시 목운중 유지)
+    goToMyLocation(true);
+  }catch(err){
+    console.error('네이버 지도 초기화 에러', err);
+    $('map').innerHTML = `<div style="padding:30px 18px; text-align:center; color:var(--text-soft); font-size:0.78rem; line-height:1.6;">지도 초기화 중 에러 발생 😥<br><br><span style="color:var(--danger); font-family:monospace; font-size:0.72rem; word-break:break-all;">${escapeHtml(String(err && err.message || err))}</span></div>`;
+  }
 }
 
 let myLocMarker = null;
