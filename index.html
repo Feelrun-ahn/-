@@ -166,7 +166,6 @@
     border:1px solid var(--border); box-shadow:var(--shadow-md);
     padding:18px; margin-bottom:14px; cursor:pointer;
     transition:transform 0.12s ease;
-    animation:cardIn 0.32s ease backwards;
   }
   .room-card:active{ transform:scale(0.98); }
   .rc-top{ display:flex; align-items:center; gap:14px; }
@@ -443,11 +442,21 @@
   .locate-btn{ width:38px; height:38px; border-radius:11px; border:1px solid var(--border); background:var(--surface-strong); backdrop-filter:blur(var(--blur)); -webkit-backdrop-filter:blur(var(--blur)); box-shadow:0 2px 6px rgba(23,25,35,0.08); font-size:1.1rem; cursor:pointer; display:flex; align-items:center; justify-content:center; }
   .locate-btn:active{ background:var(--accent-soft); }
 
-  .search-wrap{ position:absolute; top:12px; left:12px; right:12px; z-index:10; }
-  .search-bar{ display:flex; align-items:center; gap:9px; background:var(--surface-strong); backdrop-filter:blur(var(--blur)); -webkit-backdrop-filter:blur(var(--blur)); border-radius:15px; padding:11px 13px; box-shadow:var(--shadow-md); border:1.5px solid var(--border); transition:border-color 0.2s, box-shadow 0.2s; }
+  .search-wrap{ position:absolute; top:12px; left:12px; right:12px; z-index:10; display:flex; }
+  .search-bar{
+    display:flex; align-items:center; gap:9px; background:var(--surface-strong);
+    backdrop-filter:blur(var(--blur)); -webkit-backdrop-filter:blur(var(--blur));
+    border-radius:15px; padding:11px 13px; box-shadow:var(--shadow-md); border:1.5px solid var(--border);
+    transition:width 0.34s cubic-bezier(0.22,1,0.36,1), border-color 0.2s, box-shadow 0.2s;
+    width:100%; max-width:100%; overflow:hidden;
+  }
   .search-bar:focus-within{ border-color:var(--accent); box-shadow:var(--shadow-lg); }
   .search-bar > svg{ flex-shrink:0; color:#9AA0AC; }
-  .search-bar input{ flex:1; border:none; outline:none; background:transparent; font-family:inherit; font-size:0.88rem; color:var(--text); min-width:0; font-weight:500; }
+  .search-bar input{ flex:1; border:none; outline:none; background:transparent; font-family:inherit; font-size:0.88rem; color:var(--text); min-width:0; font-weight:500; transition:opacity 0.2s; }
+  .search-wrap.collapsed .search-bar{ width:46px; padding:11px; cursor:pointer; }
+  .search-wrap.collapsed .search-bar input,
+  .search-wrap.collapsed .search-bar .search-clear{ opacity:0; pointer-events:none; }
+  .search-wrap.collapsed .search-results{ display:none; }
   .search-clear{ border:none; background:#EEF0F4; color:#8E93A0; width:22px; height:22px; border-radius:50%; font-size:0.7rem; display:flex; align-items:center; justify-content:center; }
   .search-results{ margin-top:8px; background:var(--sheet-bg); backdrop-filter:blur(var(--blur)); -webkit-backdrop-filter:blur(var(--blur)); border:1px solid var(--border); border-radius:15px; box-shadow:var(--shadow-lg); max-height:44vh; overflow-y:auto; opacity:0; transform:translateY(-8px); pointer-events:none; transition:opacity 0.22s, transform 0.22s; }
   .search-results.show{ opacity:1; transform:translateY(0); pointer-events:auto; }
@@ -872,8 +881,8 @@
 
   <div class="map-wrap">
     <div id="map"></div>
-    <div class="search-wrap">
-      <div class="search-bar">
+    <div class="search-wrap collapsed" id="searchWrap">
+      <div class="search-bar" id="searchBar">
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
         <input id="searchInput" type="text" placeholder="장소·상호명 검색 (예: 스타벅스 홍대점)" autocomplete="off">
         <button class="search-clear hidden" id="searchClear">✕</button>
@@ -1437,7 +1446,7 @@ function renderRoomList(){
     return;
   }
   box.innerHTML = list.map((r,i)=>`
-    <div class="room-card" data-code="${escapeHtml(r.code)}" style="animation-delay:${i*45}ms">
+    <div class="room-card" data-code="${escapeHtml(r.code)}">
       <button class="rc-del" data-del="${escapeHtml(r.code)}" title="목록에서 제거">✕</button>
       <div class="rc-top">
         <div class="rc-icon">${escapeHtml(r.emoji || '📍')}</div>
@@ -2337,7 +2346,7 @@ function renderResultItems(list){
     el.addEventListener('click', ()=>{
       const it = lastSearchResults[parseInt(el.dataset.idx,10)];
       if(!it) return;
-      map.morph(new naver.maps.LatLng(it.lat,it.lng), 16, { duration:800 }); hideResults(); clearSearch();
+      map.morph(new naver.maps.LatLng(it.lat,it.lng), 16, { duration:800 }); hideResults(); clearSearch(); closeSearchBar();
       setTimeout(()=> openAdd({lat:it.lat,lng:it.lng}, it.name, it), 700);
     });
   });
@@ -2349,7 +2358,7 @@ function showNoResult(q){
       <div class="sr-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg></div>
       <div><div class="sr-main">'${escapeHtml(q)}' 직접 추가하기</div><div class="sr-sub">지도 중심에 핀을 놓을게 · 지도를 탭해 조정 가능</div></div>
     </div>`);
-  const b=$('manualAdd'); if(b) b.addEventListener('click', ()=>{ const nm=q; hideResults(); clearSearch(); const c=map.getCenter(); openAdd({lat:c.lat(), lng:c.lng()}, nm); });
+  const b=$('manualAdd'); if(b) b.addEventListener('click', ()=>{ const nm=q; hideResults(); clearSearch(); closeSearchBar(); const c=map.getCenter(); openAdd({lat:c.lat(), lng:c.lng()}, nm); });
 }
 let searchSeq = 0;
 let searchDebounce = null;
@@ -2401,6 +2410,7 @@ function runSearch(q){
   });
 }
 function clearSearch(){ $('searchInput').value=''; $('searchClear').classList.add('hidden'); }
+function closeSearchBar(){ $('searchWrap').classList.add('collapsed'); }
 function onSearchInput(){
   const v=$('searchInput').value.trim();
   $('searchClear').classList.toggle('hidden', !v);
@@ -2439,7 +2449,7 @@ function compressImageFile(file){
 }
 function openAdd(latlng, prefill, extra){
   if(!canAdd()){ showToast('방장이 후보 추가를 잠갔어'); return; }
-  hideResults(); clearSearch();
+  hideResults(); clearSearch(); closeSearchBar();
   pendingLatLng = latlng;
   pendingExtra = extra || null;
   resetPhotoPicker();
@@ -2728,7 +2738,9 @@ $('shareOverlay').addEventListener('click', (e)=>{ if(e.target.id==='shareOverla
 $('searchInput').addEventListener('input', onSearchInput);
 (function setupPanelDrag(){
   const grip = $('panelGrip');
+  const head = document.querySelector('.panel-head');
   const panel = document.querySelector('.panel');
+  const dragZones = [grip, head].filter(Boolean);
   let startY = 0, startH = 0, dragging = false, moved = false;
   const vh = ()=> window.innerHeight;
   const COLLAPSED = ()=> Math.round(vh()*0.34);
@@ -2767,14 +2779,29 @@ $('searchInput').addEventListener('input', onSearchInput);
     }
     setTimeout(()=> mapResize(), 340);
   }
-  grip.addEventListener('touchstart', down, {passive:false});
-  grip.addEventListener('touchmove', move, {passive:false});
-  grip.addEventListener('touchend', up);
-  grip.addEventListener('mousedown', down);
+  dragZones.forEach(zone=>{
+    zone.addEventListener('touchstart', down, {passive:false});
+    zone.addEventListener('touchmove', move, {passive:false});
+    zone.addEventListener('touchend', up);
+    zone.addEventListener('mousedown', down);
+  });
   window.addEventListener('mousemove', move);
   window.addEventListener('mouseup', up);
 })();
 $('searchClear').addEventListener('click', ()=>{ clearSearch(); hideResults(); $('searchInput').focus(); });
+$('searchBar').addEventListener('click', (e)=>{
+  if($('searchWrap').classList.contains('collapsed')){
+    $('searchWrap').classList.remove('collapsed');
+    setTimeout(()=> $('searchInput').focus(), 60);
+  }
+});
+$('searchInput').addEventListener('blur', ()=>{
+  setTimeout(()=>{
+    if(!$('searchInput').value.trim() && !$('searchResults').classList.contains('show')){
+      $('searchWrap').classList.add('collapsed');
+    }
+  }, 180);
+});
 
 /* ================= onboarding (첫 설치 시에만) ================= */
 const ONBOARD_KEY = 'bijeong-onboarded-v1';
