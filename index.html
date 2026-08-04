@@ -2511,7 +2511,14 @@ function initMap(){
       zoomControl: true,
       zoomControlOptions: { position: naver.maps.Position.BOTTOM_LEFT }
     });
-    if(typeof window.showDebugError === 'function') showDebugError('naver.maps.Map 생성 성공');
+    if(typeof window.showDebugError === 'function'){
+      const mapEl = $('map');
+      const wrapEl = document.querySelector('.map-wrap');
+      showDebugError('naver.maps.Map 생성 성공');
+      showDebugError('#map 크기: ' + mapEl.offsetWidth + 'x' + mapEl.offsetHeight + ' / .map-wrap 크기: ' + (wrapEl?wrapEl.offsetWidth:'?') + 'x' + (wrapEl?wrapEl.offsetHeight:'?'));
+      naver.maps.Event.addListener(map, 'idle', ()=> showDebugError('지도 idle 이벤트 발생함 (타일 로딩 시도됨)'));
+      naver.maps.Event.addListener(map, 'init_stylemap', ()=> showDebugError('init_stylemap 이벤트 발생함'));
+    }
 
     naver.maps.Event.addListener(map, 'click', (e)=>{
       const latlng = { lat: e.coord.y, lng: e.coord.x };
