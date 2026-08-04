@@ -140,6 +140,8 @@
   .home-wrap{ display:flex; flex-direction:column; height:100%; width:100%; position:relative; z-index:1; }
   .home-header{ padding:22px 22px 8px; flex-shrink:0; display:flex; align-items:center; justify-content:space-between; }
   .home-eyebrow{ margin:0 0 2px; font-size:0.84rem; font-weight:600; color:var(--text-soft); }
+  .home-eyebrow.tw-cursor::after{ content:''; display:inline-block; width:2px; height:0.9em; margin-left:2px; background:var(--accent); vertical-align:-2px; animation:twBlink 0.8s step-end infinite; }
+  @keyframes twBlink{ 50%{ opacity:0; } }
   .home-title{ margin:0; font-size:1.65rem; font-weight:800; color:var(--text); letter-spacing:-0.3px; }
   .home-list{ flex:1; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:12px 22px 20px; display:flex; flex-direction:column; }
   .home-footer{
@@ -174,7 +176,7 @@
   .rc-name-row{ display:flex; align-items:center; gap:7px; margin-bottom:4px; }
   .rc-name{ margin:0; font-size:1.02rem; font-weight:700; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .rc-meta{ margin:0; font-size:0.78rem; color:var(--text-soft); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .rc-dday{ flex:none; font-size:0.72rem; font-weight:800; padding:4px 10px; border-radius:10px; color:#fff; background:linear-gradient(135deg,var(--accent),var(--accent-2)); box-shadow:0 4px 12px rgba(91,91,214,0.3); }
+  .rc-dday{ flex:none; font-size:0.72rem; font-weight:800; padding:4px 10px; border-radius:10px; color:#fff; background:linear-gradient(135deg,var(--accent),var(--accent-2)); box-shadow:0 4px 12px rgba(91,91,214,0.3); margin-right:28px; }
   .rc-leader-row{ display:flex; align-items:center; gap:8px; margin-top:12px; padding:10px 12px; border-radius:14px; background:var(--line); }
   .rc-leader-row.has-leader{ background:var(--accent-soft); }
   .rc-leader-row .rl-emoji{ font-size:1rem; }
@@ -1403,30 +1405,46 @@ function homeGreetingText(){
   const days = ['일요일','월요일','화요일','수요일','목요일','금요일','토요일'];
   const day = days[now.getDay()];
   const isWeekend = (now.getDay()===0 || now.getDay()===6);
-  const moods = ['화창한','선선한','포근한','여유로운','활기찬','나른한','상쾌한','조용한','평화로운'];
+  const moods = ['화창한','선선한','포근한','여유로운','활기찬','나른한','상쾌한','조용한','평화로운','싱그러운','느긋한','따뜻한'];
   const mood = ()=> moods[Math.floor(Math.random()*moods.length)];
 
   let pool;
   if(h < 5){
-    pool = ['이 시간까지 안 자고 뭐해 👀', `고요한 ${day} 새벽이에요`, '오늘 하루도 잘 마무리했어?'];
+    pool = ['이 시간까지 안 자고 뭐해 👀', `고요한 ${day} 새벽이에요`, '오늘 하루도 잘 마무리했어?', '아직 안 잤어? 얼른 자야지 🌌', `${day} 새벽, 뭐 하다 여기까지 왔어`, '조용한 새벽 시간이에요'];
   } else if(h < 9){
-    pool = ['좋은 아침이에요 ☀️', `${mood()} 아침이에요`, '오늘도 화이팅! 💪', `상쾌한 ${day} 아침이에요`];
+    pool = ['좋은 아침이에요 ☀️', `${mood()} 아침이에요`, '오늘도 화이팅! 💪', `상쾌한 ${day} 아침이에요`, '일어난 김에 오늘 계획 세워볼까?', `${day} 아침, 잘 잤어?`, isWeekend?'주말 아침이네, 늦잠 잤어?':'월요일부터 부지런하네!'];
   } else if(h < 12){
-    pool = [`${mood()} 오전이에요`, '오늘 하루도 잘 보내고 있어?', `${day} 오전, 어떻게 보내고 있어?`];
+    pool = [`${mood()} 오전이에요`, '오늘 하루도 잘 보내고 있어?', `${day} 오전, 어떻게 보내고 있어?`, '오전 시간 잘 활용하고 있어?', `벌써 ${day} 오전이 반 지나갔네`];
   } else if(h < 14){
-    pool = ['맛있는 점심 시간이에요 🍚', '점심은 뭐 먹을지 골랐어?', '든든하게 챙겨 먹었어?'];
+    pool = ['맛있는 점심 시간이에요 🍚', '점심은 뭐 먹을지 골랐어?', '든든하게 챙겨 먹었어?', '점심시간이야, 밥은 먹었어?', `${day} 점심, 뭐 먹을까 고민 중이야?`];
   } else if(h < 18){
-    pool = [`아주 ${mood()} 오후예요`, `${mood()} ${day} 오후예요`, '나른한 오후, 잠깐 쉬었다 가 ☕', isWeekend?'여유로운 주말 오후예요':'오늘도 수고 많아'];
+    pool = [`아주 ${mood()} 오후예요`, `${mood()} ${day} 오후예요`, '나른한 오후, 잠깐 쉬었다 가 ☕', isWeekend?'여유로운 주말 오후예요':'오늘도 수고 많아', '오후 시간 잘 보내고 있어?', `${day} 오후도 절반 왔네`, '살짝 노곤해지는 시간이야'];
   } else if(h < 21){
-    pool = [`${mood()} 저녁이에요`, '하루 마무리는 어때?', '선선한 바람 부는 저녁이에요 🌇', `${day} 저녁, 오늘 뭐 했어?`];
+    pool = [`${mood()} 저녁이에요`, '하루 마무리는 어때?', '선선한 바람 부는 저녁이에요 🌇', `${day} 저녁, 오늘 뭐 했어?`, '저녁은 먹었어?', '오늘 하루 어땠어?', isWeekend?'주말 저녁, 뭐 하고 있어?':'퇴근/하교하고 좀 쉬고 있어?'];
   } else {
-    pool = ['편안한 밤 되세요 🌙', '오늘 하루도 수고했어', `${mood()} ${day} 밤이에요`, '슬슬 잘 준비할 시간이야'];
+    pool = ['편안한 밤 되세요 🌙', '오늘 하루도 수고했어', `${mood()} ${day} 밤이에요`, '슬슬 잘 준비할 시간이야', '오늘 하루 잘 마무리하고 있어?', `${day} 밤, 내일 계획은 세웠어?`, '하루 끝, 푹 쉬어'];
   }
   return pool[Math.floor(Math.random()*pool.length)];
 }
+function typewriteText(el, text, speed){
+  if(!el) return;
+  speed = speed || 32;
+  el.textContent = '';
+  el.classList.add('tw-cursor');
+  let i = 0;
+  clearInterval(el._twTimer);
+  el._twTimer = setInterval(()=>{
+    i++;
+    el.textContent = text.slice(0, i);
+    if(i >= text.length){
+      clearInterval(el._twTimer);
+      setTimeout(()=> el.classList.remove('tw-cursor'), 500);
+    }
+  }, speed);
+}
 function goHomeOrLobby(){
   const gEl = $('homeGreeting');
-  if(gEl) gEl.textContent = homeGreetingText();
+  if(gEl) typewriteText(gEl, homeGreetingText());
   renderRoomList();
   showScreen('homeScreen');
 }
@@ -2957,4 +2975,3 @@ if('serviceWorker' in navigator){
 </script>
 </body>
 </html>
-
