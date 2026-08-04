@@ -426,7 +426,7 @@
   .status-chip.set-btn{ color:var(--accent); font-weight:700; font-size:0.82rem; cursor:pointer; }
 
   .map-wrap{ position:relative; flex:1 1 auto; min-height:0; }
-  #map{ position:absolute; inset:0; z-index:0; background:#E8EBF0; }
+  #map{ position:absolute; inset:0; width:100%; height:100%; z-index:0; background:#E8EBF0; }
   .locate-btn{ width:38px; height:38px; border-radius:11px; border:1px solid var(--border); background:var(--surface-strong); backdrop-filter:blur(var(--blur)); -webkit-backdrop-filter:blur(var(--blur)); box-shadow:0 2px 6px rgba(23,25,35,0.08); font-size:1.1rem; cursor:pointer; display:flex; align-items:center; justify-content:center; }
   .locate-btn:active{ background:var(--accent-soft); }
 
@@ -1659,9 +1659,7 @@ function enterRoom(){
   $('roomLoading').classList.remove('hide');
   if(typeof window.showDebugError === 'function') showDebugError('enterRoom() 실행됨, map=' + (map ? '있음' : '없음'));
   if(!map){
-    // 화면이 막 display:none에서 풀린 시점이라 컨테이너 크기가 아직 0일 수 있음 →
-    // 레이아웃이 실제로 반영된 다음 프레임에 지도를 생성해야 크기 0으로 고정되는 걸 막을 수 있음
-    requestAnimationFrame(()=> requestAnimationFrame(()=>{ if(!map) initMap(); }));
+    waitForMapWrapSize(0);
   } else {
     mapResize();
   }
@@ -2479,12 +2477,31 @@ function leaveRoom(){
 }
 
 /* ================= map init (네이버 지도) ================= */
+function waitForMapWrapSize(attempts){
+  const wrapEl = document.querySelector('.map-wrap');
+  const h = wrapEl ? wrapEl.clientHeight : 0;
+  if(typeof window.showDebugError === 'function' && attempts % 5 === 0) showDebugError('크기 대기 중 (시도 ' + attempts + '): .map-wrap 높이=' + h);
+  if(h > 0){
+    if(typeof window.showDebugError === 'function') showDebugError('크기 확보됨 (시도 ' + attempts + '회 만에): ' + h + 'px → 지도 생성 시작');
+    if(!map) initMap();
+    return;
+  }
+  if(attempts >= 40){
+    if(typeof window.showDebugError === 'function') showDebugError('40회 시도해도 크기 0 · 그냥 강행해서 지도 생성');
+    if(!map) initMap();
+    return;
+  }
+  setTimeout(()=> waitForMapWrapSize(attempts+1), 50);
+}
 function mapResize(){
   if(!map) return;
   try{
     const el = $('map');
-    if(el && el.clientWidth > 0 && el.clientHeight > 0){
-      map.setSize(new naver.maps.Size(el.clientWidth, el.clientHeight));
+    const wrapEl = document.querySelector('.map-wrap');
+    if(wrapEl && wrapEl.clientWidth > 0 && wrapEl.clientHeight > 0){
+      el.style.width = wrapEl.clientWidth + 'px';
+      el.style.height = wrapEl.clientHeight + 'px';
+      map.setSize(new naver.maps.Size(wrapEl.clientWidth, wrapEl.clientHeight));
     }
     naver.maps.Event.trigger(map, 'resize');
   }catch(e){ console.warn('mapResize 실패', e); }
@@ -2505,6 +2522,14 @@ function initMap(){
     return;
   }
   try{
+    // #map의 position:absolute;inset:0 방식 높이 계산이 일부 환경에서 0으로 나오는 문제 우회:
+    // 부모(.map-wrap)의 실측 크기를 그대로 픽셀로 강제 지정
+    const mapEl0 = $('map');
+    const wrapEl0 = document.querySelector('.map-wrap');
+    if(wrapEl0 && wrapEl0.clientHeight > 0){
+      mapEl0.style.width = wrapEl0.clientWidth + 'px';
+      mapEl0.style.height = wrapEl0.clientHeight + 'px';
+    }
     map = new naver.maps.Map('map', {
       center: new naver.maps.LatLng(SCHOOL[0], SCHOOL[1]),
       zoom: 16,
