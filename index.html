@@ -136,7 +136,7 @@
   @keyframes gradientShift{ 0%{background-position:0% 50%;} 50%{background-position:100% 50%;} 100%{background-position:0% 50%;} }
 
   /* 내 모임 홈 - 중앙 카드 대신 화면 전체를 채우는 레이아웃 */
-  #homeScreen{ padding:0; align-items:stretch; justify-content:flex-start; }
+  #homeScreen{ padding:0; align-items:stretch; justify-content:flex-start; overflow-y:hidden; }
   .home-wrap{ display:flex; flex-direction:column; height:100%; width:100%; position:relative; z-index:1; }
   .home-header{ padding:22px 22px 8px; flex-shrink:0; display:flex; align-items:center; justify-content:space-between; }
   .home-eyebrow{ margin:0 0 2px; font-size:0.84rem; font-weight:600; color:var(--text-soft); }
@@ -164,7 +164,7 @@
     position:relative; border-radius:24px; background:var(--surface);
     backdrop-filter:blur(var(--blur)); -webkit-backdrop-filter:blur(var(--blur));
     border:1px solid var(--border); box-shadow:var(--shadow-md);
-    padding:18px; margin-bottom:14px; cursor:pointer; overflow:hidden;
+    padding:18px; margin-bottom:14px; cursor:pointer;
     transition:transform 0.12s ease;
     animation:cardIn 0.32s ease backwards;
   }
@@ -322,11 +322,24 @@
   .member-row .m-me{ font-size:0.68rem; color:var(--accent); font-weight:700; }
 
   /* ===== place detail sheet ===== */
-  .detail-hero{ height:150px; border-radius:22px; background:linear-gradient(135deg,var(--accent),var(--accent-2)); display:flex; align-items:center; justify-content:center; box-shadow:0 12px 30px rgba(91,91,214,0.3); font-size:60px; }
+  .detail-hero{ height:150px; border-radius:22px; background:linear-gradient(135deg,var(--accent),var(--accent-2)); display:flex; align-items:center; justify-content:center; box-shadow:0 12px 30px rgba(91,91,214,0.3); font-size:60px; position:relative; overflow:hidden; }
+  #detailPhoto{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
   .detail-name{ margin:0 0 4px; font-size:1.3rem; font-weight:800; letter-spacing:-0.3px; color:var(--text); }
   .detail-meta{ margin:0; font-size:0.8rem; color:var(--text-soft); }
   .detail-rank{ flex:none; font-size:0.7rem; font-weight:800; padding:6px 11px; border-radius:11px; color:#fff; background:linear-gradient(135deg,#F5A623,#F7931E); }
   .detail-desc{ margin:16px 0 0; font-size:0.9rem; line-height:1.65; color:var(--text); }
+  .photo-picker{ display:flex; align-items:center; gap:9px; padding:13px 14px; border-radius:14px; border:1.5px dashed var(--border); background:var(--bg); color:var(--text-soft); font-size:0.85rem; font-weight:600; cursor:pointer; }
+  .photo-picker:active{ background:var(--accent-soft); }
+  .pp-icon{ font-size:1.05rem; }
+  .photo-preview-box{ position:relative; border-radius:14px; overflow:hidden; }
+  .photo-preview-box img{ display:block; width:100%; max-height:180px; object-fit:cover; }
+  .pp-remove{ position:absolute; top:8px; right:8px; width:28px; height:28px; border-radius:50%; border:none; background:rgba(20,18,32,0.55); color:#fff; font-size:0.8rem; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(6px); }
+  .detail-kakao-box{ margin-top:14px; background:var(--line); border-radius:14px; padding:4px 14px; }
+  .dk-row{ display:flex; align-items:center; gap:9px; padding:11px 0; font-size:0.84rem; font-weight:600; color:var(--text); text-decoration:none; border-bottom:1px solid var(--border); }
+  .dk-row:last-child{ border-bottom:none; }
+  .dk-icon{ font-size:0.95rem; flex-shrink:0; }
+  .dk-arrow{ margin-left:auto; color:var(--faint); font-weight:400; }
+  #detailKakaoLink{ color:var(--accent); }
   .detail-actions{ display:flex; gap:12px; margin-top:20px; }
   .detail-react{ display:flex; align-items:center; justify-content:center; gap:8px; height:54px; border-radius:16px; font-size:0.92rem; font-weight:700; border:none; }
   .detail-react.like{ flex:1.6; color:var(--text); background:var(--surface); border:1.5px solid var(--border); }
@@ -887,6 +900,17 @@
     <p class="sub">친구들이 투표할 수 있게 후보로 올릴게</p>
     <div class="field"><label>장소 이름</label><input id="placeName" type="text" placeholder="예: 홍대 스무디킹" maxlength="30"></div>
     <div class="field"><label>한마디 (선택)</label><textarea id="placeMemo" rows="2" placeholder="추천 이유나 메모"></textarea></div>
+    <div class="field">
+      <label>사진 (선택)</label>
+      <input id="placePhotoInput" type="file" accept="image/*" style="display:none;">
+      <div id="placePhotoPicker" class="photo-picker">
+        <span class="pp-icon">📷</span><span class="pp-text">사진 추가하기</span>
+      </div>
+      <div id="placePhotoPreviewBox" class="photo-preview-box hidden">
+        <img id="placePhotoPreview" alt="첨부 사진">
+        <button id="placePhotoRemove" class="pp-remove" type="button">✕</button>
+      </div>
+    </div>
     <div class="err" id="addErr">이름을 입력해줘!</div>
     <div class="sheet-actions">
       <button class="btn btn-cancel" id="addCancel">취소</button>
@@ -903,7 +927,7 @@
     <p class="sub" id="settingsSub">방장만 바꿀 수 있어</p>
 
     <div id="hostSettings">
-      <div class="field"><label>약속 날짜 & 시간</label><input id="meetDateInput" type="datetime-local"></div>
+      <div class="field"><label>약속 날짜</label><input id="meetDateInput" type="date"></div>
       <div class="toggle-row">
         <div><div class="tr-label">모두 후보 추가 가능</div><div class="tr-desc">끄면 방장만 후보를 추가할 수 있어</div></div>
         <label class="switch"><input type="checkbox" id="allowAddToggle" checked><span class="slider"></span></label>
@@ -973,7 +997,7 @@
 <div class="overlay" id="detailOverlay">
   <div class="sheet" style="max-height:88vh;">
     <div class="sheet-grip"></div>
-    <div class="detail-hero" id="detailHero"><span id="detailInitial">📍</span></div>
+    <div class="detail-hero" id="detailHero"><span id="detailInitial">📍</span><img id="detailPhoto" class="hidden" alt=""></div>
     <div style="display:flex; align-items:flex-start; gap:10px; margin-top:16px;">
       <div style="flex:1; min-width:0;">
         <h2 class="detail-name" id="detailName">장소 이름</h2>
@@ -982,6 +1006,11 @@
       <div class="detail-rank" id="detailRank" style="display:none;"></div>
     </div>
     <p class="detail-desc" id="detailDesc"></p>
+    <div id="detailKakaoBox" class="detail-kakao-box hidden">
+      <div id="detailCategoryRow" class="dk-row hidden"><span class="dk-icon">🏷️</span><span id="detailCategory"></span></div>
+      <a id="detailPhoneRow" class="dk-row hidden" href="#"><span class="dk-icon">📞</span><span id="detailPhone"></span></a>
+      <a id="detailKakaoLink" class="dk-row hidden" href="#" target="_blank" rel="noopener"><span class="dk-icon">🗺️</span>카카오맵에서 사진·영업시간 보기<span class="dk-arrow">›</span></a>
+    </div>
     <div class="detail-actions">
       <button class="detail-react dislike" id="detailDislikeBtn"><span>👎</span><span id="detailDislikeCount">0</span></button>
       <button class="detail-react like" id="detailLikeBtn"><span>👍</span><span>투표 <span id="detailLikeCount">0</span></span></button>
@@ -1722,9 +1751,20 @@ function renderDetail(){
 
   $('detailHero').style.background = `linear-gradient(135deg, ${p.color}, var(--accent-2))`;
   $('detailInitial').textContent = initials(p.author);
+  if(p.photo){ $('detailPhoto').src = p.photo; $('detailPhoto').classList.remove('hidden'); $('detailInitial').classList.add('hidden'); }
+  else { $('detailPhoto').classList.add('hidden'); $('detailInitial').classList.remove('hidden'); }
   $('detailName').textContent = p.name;
   $('detailMeta').textContent = `${p.author} 추천 · ${timeAgo(p.ts)}`;
   $('detailDesc').textContent = p.memo || '남긴 메모가 없어';
+
+  const hasCategory = !!p.category, hasPhone = !!p.phone, hasKakaoUrl = !!p.kakaoUrl;
+  $('detailKakaoBox').classList.toggle('hidden', !(hasCategory || hasPhone || hasKakaoUrl));
+  $('detailCategoryRow').classList.toggle('hidden', !hasCategory);
+  if(hasCategory) $('detailCategory').textContent = p.category;
+  $('detailPhoneRow').classList.toggle('hidden', !hasPhone);
+  if(hasPhone){ $('detailPhone').textContent = p.phone; $('detailPhoneRow').href = 'tel:'+p.phone; }
+  $('detailKakaoLink').classList.toggle('hidden', !hasKakaoUrl);
+  if(hasKakaoUrl) $('detailKakaoLink').href = p.kakaoUrl;
 
   const rankEl = $('detailRank');
   if(isFinal){ rankEl.style.display='inline-block'; rankEl.textContent='✅ 확정된 장소'; }
@@ -1845,12 +1885,12 @@ function renderDDay(){
   const meetDay = new Date(meet.getFullYear(), meet.getMonth(), meet.getDate());
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const diffDays = Math.round((meetDay - today) / 86400000);
-  const timeStr = meet.toLocaleString('ko-KR', { month:'long', day:'numeric', hour:'2-digit', minute:'2-digit' });
+  const dateStr = meet.toLocaleDateString('ko-KR', { month:'long', day:'numeric', weekday:'short' });
   let dtxt;
   if(diffDays > 0) dtxt = 'D-'+diffDays;
   else if(diffDays === 0) dtxt = 'D-DAY';
   else dtxt = '지남';
-  el.textContent = dtxt + ' · ' + timeStr;
+  el.textContent = dtxt + ' · ' + dateStr;
 }
 
 async function renderWeather(){
@@ -2283,19 +2323,22 @@ function safeKey(s){ return (s||'').replace(/[.#$/\[\]]/g,'_'); }
 function showResults(html){ const b=$('searchResults'); b.innerHTML=html; b.classList.add('show'); }
 function hideResults(){ $('searchResults').classList.remove('show'); }
 
+let lastSearchResults = [];
 function renderResultItems(list){
-  // list: [{name, sub, lat, lng, dist}]
-  showResults(list.map(it=>`
-    <div class="sr-item" data-lat="${it.lat}" data-lng="${it.lng}" data-name="${escapeHtml(it.name)}">
+  // list: [{name, sub, lat, lng, dist, phone, category, kakaoUrl, address}]
+  lastSearchResults = list;
+  showResults(list.map((it,i)=>`
+    <div class="sr-item" data-idx="${i}">
       <div class="sr-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 21s7-6.5 7-12a7 7 0 10-14 0c0 5.5 7 12 7 12z"/><circle cx="12" cy="9" r="2.3"/></svg></div>
       <div style="flex:1; min-width:0;"><div class="sr-main">${escapeHtml(it.name)}</div><div class="sr-sub">${escapeHtml(it.sub||'')}</div></div>
       ${typeof it.dist === 'number' ? `<div class="sr-dist">${it.dist < 1 ? Math.round(it.dist*1000)+'m' : it.dist.toFixed(1)+'km'}</div>` : ''}
     </div>`).join(''));
-  document.querySelectorAll('.sr-item[data-lat]').forEach(el=>{
+  document.querySelectorAll('.sr-item[data-idx]').forEach(el=>{
     el.addEventListener('click', ()=>{
-      const lat=parseFloat(el.dataset.lat), lng=parseFloat(el.dataset.lng), nm=el.dataset.name;
-      map.morph(new naver.maps.LatLng(lat,lng), 16, { duration:800 }); hideResults(); clearSearch();
-      setTimeout(()=> openAdd({lat,lng}, nm), 700);
+      const it = lastSearchResults[parseInt(el.dataset.idx,10)];
+      if(!it) return;
+      map.morph(new naver.maps.LatLng(it.lat,it.lng), 16, { duration:800 }); hideResults(); clearSearch();
+      setTimeout(()=> openAdd({lat:it.lat,lng:it.lng}, it.name, it), 700);
     });
   });
 }
@@ -2336,7 +2379,11 @@ function runSearch(q){
           name: it.place_name,
           sub: it.road_address_name || it.address_name || '',
           lat, lng,
-          dist: it.distance ? (parseFloat(it.distance)/1000) : distKm(cLat, cLng, lat, lng)
+          dist: it.distance ? (parseFloat(it.distance)/1000) : distKm(cLat, cLng, lat, lng),
+          phone: it.phone || '',
+          category: (it.category_name||'').split('>').pop().trim(),
+          kakaoUrl: it.place_url || '',
+          address: it.road_address_name || it.address_name || ''
         };
       }).filter(x=> !isNaN(x.lat) && !isNaN(x.lng));
       if(list.length) renderResultItems(list);
@@ -2364,10 +2411,38 @@ function onSearchInput(){
 
 /* ================= add place ================= */
 function canAdd(){ return room && (room.allowAdd || isHost()); }
-function openAdd(latlng, prefill){
+let pendingExtra = null;
+let pendingPhoto = null; // 압축된 base64 데이터 URL
+function resetPhotoPicker(){
+  pendingPhoto = null;
+  $('placePhotoInput').value = '';
+  $('placePhotoPreviewBox').classList.add('hidden');
+  $('placePhotoPicker').classList.remove('hidden');
+}
+function compressImageFile(file){
+  return new Promise((resolve, reject)=>{
+    const img = new Image();
+    const reader = new FileReader();
+    reader.onload = (e)=>{ img.onload = ()=>{
+      const MAX = 900;
+      let w = img.width, h = img.height;
+      if(w > h && w > MAX){ h = Math.round(h*MAX/w); w = MAX; }
+      else if(h >= w && h > MAX){ w = Math.round(w*MAX/h); h = MAX; }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL('image/jpeg', 0.72));
+    }; img.onerror = reject; img.src = e.target.result; };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+function openAdd(latlng, prefill, extra){
   if(!canAdd()){ showToast('방장이 후보 추가를 잠갔어'); return; }
   hideResults(); clearSearch();
   pendingLatLng = latlng;
+  pendingExtra = extra || null;
+  resetPhotoPicker();
   $('placeName').value = prefill || '';
   $('placeMemo').value = '';
   $('addErr').style.display='none';
@@ -2378,6 +2453,8 @@ function openAdd(latlng, prefill){
 function closeAdd(){
   $('addOverlay').classList.remove('show');
   pendingLatLng=null;
+  pendingExtra=null;
+  resetPhotoPicker();
   clearTempMarker();
   // 지도 상호작용 확실히 복구
   if(map){ setTimeout(()=> mapResize(), 50); }
@@ -2388,10 +2465,22 @@ function saveAdd(){
   if(!name){ $('addErr').style.display='block'; return; }
   const id='pl_'+Date.now()+'_'+Math.floor(Math.random()*1000);
   const savedLatLng = pendingLatLng;
+  const ex = pendingExtra;
   const place={ id, lat:savedLatLng.lat, lng:savedLatLng.lng, name, memo, author:myNickname, authorId:myId, color:colorForName(myId), votes:{}, likes:{}, dislikes:{}, ts:Date.now() };
+  if(ex){
+    if(ex.phone) place.phone = ex.phone;
+    if(ex.category) place.category = ex.category;
+    if(ex.kakaoUrl) place.kakaoUrl = ex.kakaoUrl;
+    if(ex.address) place.address = ex.address;
+  }
+  if(pendingPhoto) place.photo = pendingPhoto;
   set(ref(db,'rooms/'+roomCode+'/places/'+id), place)
     .then(()=>{ showToast('후보를 추가했어! 📍'); })
-    .catch(e=>{ console.error(e); showToast('추가 실패 · 인터넷 확인'); });
+    .catch(e=>{
+      console.error(e);
+      if(pendingPhoto) showToast('추가 실패 · 사진 용량이 너무 클 수 있어');
+      else showToast('추가 실패 · 인터넷 확인');
+    });
   closeAdd();
 }
 function flyToPlace(p){ if(p && map) map.morph(toNLatLng(p), 16, { duration:800 }); }
@@ -2417,7 +2506,11 @@ function openSettings(){
 function closeSettings(){ $('settingsOverlay').classList.remove('show'); }
 function saveSettings(){
   const val = $('meetDateInput').value;
-  const meetAt = val ? new Date(val).getTime() : null;
+  let meetAt = null;
+  if(val){
+    const [y,m,d] = val.split('-').map(Number);
+    meetAt = new Date(y, m-1, d, 12, 0, 0).getTime(); // 정오로 고정해 시간대 문제 방지
+  }
   update(ref(db,'rooms/'+roomCode), {
     meetAt,
     allowAdd: $('allowAddToggle').checked,
@@ -2427,7 +2520,7 @@ function saveSettings(){
 }
 function toLocalInput(d){
   const p=(n)=>String(n).padStart(2,'0');
-  return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+'T'+p(d.getHours())+':'+p(d.getMinutes());
+  return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());
 }
 
 /* ================= share ================= */
@@ -2581,6 +2674,23 @@ function goToMyLocation(silent){
 $('addCancel').addEventListener('click', closeAdd);
 $('addSave').addEventListener('click', saveAdd);
 $('addOverlay').addEventListener('click', (e)=>{ if(e.target.id==='addOverlay') closeAdd(); });
+$('placePhotoPicker').addEventListener('click', ()=> $('placePhotoInput').click());
+$('placePhotoInput').addEventListener('change', async (e)=>{
+  const file = e.target.files && e.target.files[0];
+  if(!file) return;
+  if(!file.type.startsWith('image/')){ showToast('이미지 파일만 첨부할 수 있어'); return; }
+  try{
+    const dataUrl = await compressImageFile(file);
+    pendingPhoto = dataUrl;
+    $('placePhotoPreview').src = dataUrl;
+    $('placePhotoPreviewBox').classList.remove('hidden');
+    $('placePhotoPicker').classList.add('hidden');
+  }catch(err){
+    console.error('사진 처리 실패', err);
+    showToast('사진을 불러오지 못했어');
+  }
+});
+$('placePhotoRemove').addEventListener('click', ()=> resetPhotoPicker());
 $('settingsBtn').addEventListener('click', openSettings);
 $('homeBtn').addEventListener('click', leaveRoom);
 $('hMemberCount').addEventListener('click', openMembers);
