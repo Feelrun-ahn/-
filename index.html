@@ -2301,7 +2301,7 @@ function showNoResult(q){
       <div class="sr-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg></div>
       <div><div class="sr-main">'${escapeHtml(q)}' 직접 추가하기</div><div class="sr-sub">지도 중심에 핀을 놓을게 · 지도를 탭해 조정 가능</div></div>
     </div>`);
-  const b=$('manualAdd'); if(b) b.addEventListener('click', ()=>{ const nm=q; hideResults(); clearSearch(); const c=map.getCenter(); openAdd({lat:c.lat,lng:c.lng}, nm); });
+  const b=$('manualAdd'); if(b) b.addEventListener('click', ()=>{ const nm=q; hideResults(); clearSearch(); const c=map.getCenter(); openAdd({lat:c.lat(), lng:c.lng()}, nm); });
 }
 let searchSeq = 0;
 let searchDebounce = null;
@@ -2310,7 +2310,8 @@ async function runSearch(q){
   showResults(`<div class="sr-msg"><span style="opacity:.6">🔍 '${escapeHtml(q)}' 검색 중...</span></div>`);
   try{
     const c = map.getCenter();
-    const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodeURIComponent(q)}&limit=10&countrycodes=kr&accept-language=ko&viewbox=${c.lng-0.5},${c.lat+0.5},${c.lng+0.5},${c.lat-0.5}&bounded=0`;
+    const cLat = c.lat(), cLng = c.lng();
+    const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodeURIComponent(q)}&limit=10&countrycodes=kr&accept-language=ko&viewbox=${cLng-0.5},${cLat+0.5},${cLng+0.5},${cLat-0.5}&bounded=0`;
     const res = await fetch(url, { headers:{ 'Accept':'application/json' } });
     if(!res.ok) throw new Error('http '+res.status);
     const data = await res.json();
@@ -2504,8 +2505,7 @@ function initMap(){
     map = new naver.maps.Map('map', {
       center: new naver.maps.LatLng(SCHOOL[0], SCHOOL[1]),
       zoom: 16,
-      zoomControl: true,
-      zoomControlOptions: { style: naver.maps.ZoomControlStyle.SMALL, position: naver.maps.Position.BOTTOM_LEFT }
+      zoomControl: false
     });
 
     naver.maps.Event.addListener(map, 'click', (e)=>{
@@ -2517,6 +2517,9 @@ function initMap(){
     });
     naver.maps.Event.addListener(map, 'dragstart', hideResults);
 
+    // 확대/축소 버튼 (네이버 기본 스타일 대신 우리 앱 디자인에 맞는 커스텀 버튼)
+    addMapControlButton('zoomInBtn', '＋', '확대', naver.maps.Position.BOTTOM_LEFT, ()=> map.setZoom(map.getZoom()+1, true));
+    addMapControlButton('zoomOutBtn', '－', '축소', naver.maps.Position.BOTTOM_LEFT, ()=> map.setZoom(map.getZoom()-1, true));
     // 현재 위치로 지도 이동 버튼 (검색창과 안 겹치게 하단에 배치)
     addMapControlButton('locateMapBtn', '📍', '현재 위치', naver.maps.Position.BOTTOM_RIGHT, goToMyLocation);
     // 내 위치를 멤버들과 실시간 공유하는 토글 버튼
