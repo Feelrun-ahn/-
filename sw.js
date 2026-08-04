@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bijeong-map-v1';
+const CACHE_NAME = 'bijeong-map-v10';
 const APP_SHELL = [
   './index.html',
   './manifest.json',
@@ -37,9 +37,10 @@ self.addEventListener('fetch', (event) => {
   if (isLiveData(req.url)) return; // 네트워크로 그대로 흘려보냄 (실시간성 보장)
 
   // HTML 문서: 네트워크 우선 (항상 최신 버전), 실패하면 캐시로 대체
+  // cache:'no-store'로 브라우저 HTTP 캐시 자체를 건너뛰어야 진짜 최신 파일을 받아옴
   if (req.mode === 'navigate' || req.destination === 'document') {
     event.respondWith(
-      fetch(req).then((res) => {
+      fetch(req, { cache: 'no-store' }).then((res) => {
         const copy = res.clone();
         caches.open(CACHE_NAME).then((c) => c.put(req, copy)).catch(()=>{});
         return res;
