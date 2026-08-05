@@ -526,9 +526,10 @@
   .search-bar > svg{ flex-shrink:0; color:#9AA0AC; }
   .search-bar input{ flex:1; border:none; outline:none; background:transparent; font-family:inherit; font-size:0.88rem; color:var(--text); min-width:0; font-weight:500; transition:opacity 0.2s; }
   .search-wrap.collapsed .search-bar{ width:46px; height:46px; padding:0; cursor:pointer; justify-content:center; gap:0; }
-  .search-wrap.collapsed .search-bar > svg{ margin:0; }
-  .search-wrap.collapsed .search-bar input,
-  .search-wrap.collapsed .search-bar .search-clear{ opacity:0; pointer-events:none; }
+  .search-wrap.collapsed .search-bar > svg{ margin:0; flex:none; }
+  /* 접혔을 때 입력창이 자리를 차지하지 않도록 완전히 0폭으로 (아이콘 정중앙 정렬) */
+  .search-wrap.collapsed .search-bar input{ width:0; min-width:0; flex:0 0 0; padding:0; margin:0; opacity:0; pointer-events:none; }
+  .search-wrap.collapsed .search-bar .search-clear{ display:none; }
   .search-wrap.collapsed .search-results{ display:none; }
   .search-clear{ border:none; background:#EEF0F4; color:#8E93A0; width:22px; height:22px; border-radius:50%; font-size:0.7rem; display:flex; align-items:center; justify-content:center; }
   .search-results{ margin-top:8px; background:var(--sheet-bg); backdrop-filter:blur(var(--blur)); -webkit-backdrop-filter:blur(var(--blur)); border:1px solid var(--border); border-radius:15px; box-shadow:var(--shadow-lg); max-height:44vh; overflow-y:auto; opacity:0; transform:translateY(-8px); pointer-events:none; transition:opacity 0.22s, transform 0.22s; }
@@ -601,8 +602,9 @@
   .panel-grip:active{ cursor:grabbing; }
   .panel-grip::before{ content:""; width:38px; height:5px; background:#D4D8E0; border-radius:3px; transition:background 0.2s; }
   .panel-grip:active::before{ background:var(--accent); }
-  .panel-head{ display:flex; align-items:center; gap:9px; margin-bottom:8px; }
+  .panel-head{ display:flex; align-items:center; gap:9px; margin-bottom:8px; touch-action:none; cursor:grab; user-select:none; -webkit-user-select:none; }
   .panel-head h2{ margin-right:auto; }
+  .panel-head:active{ cursor:grabbing; }
   .midpoint-btn{
     border:none; border-radius:12px; padding:7px 12px; font-size:0.76rem; font-weight:800;
     background:var(--accent-soft); color:var(--accent); cursor:pointer; transition:transform 0.12s;
@@ -905,7 +907,7 @@
         <p class="home-eyebrow" id="homeGreeting">📍 어디가지?</p>
         <h1 class="home-title">내 모임</h1>
       </div>
-      <button class="icon-btn" id="menuBtn" title="메뉴" style="position:relative;" style="width:44px; height:44px; border-radius:14px; background:var(--surface); backdrop-filter:blur(var(--blur)); border:1px solid var(--border); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;">
+      <button class="icon-btn" id="menuBtn" title="메뉴" style="position:relative; width:44px; height:44px; border-radius:14px; background:var(--surface); backdrop-filter:blur(var(--blur)); border:1px solid var(--border); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;">
         <span style="width:18px; height:2px; border-radius:2px; background:var(--text);"></span>
         <span style="width:18px; height:2px; border-radius:2px; background:var(--text);"></span>
         <span style="width:18px; height:2px; border-radius:2px; background:var(--text);"></span>
@@ -913,7 +915,6 @@
       </button>
     </div>
     <div class="home-list" id="roomListBox"></div>
-    <span class="red-dot hidden" id="homeDot" style="display:none;"></span>
     <div class="home-footer">
       <button class="home-btn outline" id="homeJoin">코드로 입장</button>
       <button class="home-btn solid" id="homeCreate">+ 새 방 만들기</button>
@@ -2738,8 +2739,6 @@ function subscribeNotices(){
 function unreadNoticeCount(){ return myNotices.filter(n=> !n.read).length; }
 function updateNoticeBadge(){
   const n = unreadNoticeCount();
-  const dot = $('homeDot');
-  if(dot) dot.classList.toggle('hidden', n === 0);
   const cnt = $('menuNoticeCount');
   if(cnt) cnt.textContent = n ? '('+n+')' : '';
   const mdot = $('menuBtnDot');
@@ -3910,65 +3909,80 @@ $('shareCopyLinkBtn').addEventListener('click', ()=> copyText(joinLink(roomCode)
 $('shareOverlay').addEventListener('click', (e)=>{ if(e.target.id==='shareOverlay') $('shareOverlay').classList.remove('show'); });
 $('searchInput').addEventListener('input', onSearchInput);
 (function setupPanelDrag(){
-  const grip = $('panelGrip');
-  const head = document.querySelector('.panel-head');
   const panel = document.querySelector('.panel');
-  let startY = 0, startH = 0, dragging = false, moved = false, fromHandle = false;
-  const vh = ()=> window.innerHeight;
-  const COLLAPSED = ()=> Math.round(vh()*0.34);
-  const EXPANDED = ()=> Math.round(vh()*0.72);
+  const grip  = $('panelGrip');
+  const head  = document.querySelector('.panel-head');
+  if(!panel) return;
 
-  function getY(e){ return e.touches ? e.touches[0].clientY : e.clientY; }
+  let startY=0, startH=0, dragging=false, moved=false, fromHandle=false, lastY=0;
+  const vh = ()=> window.innerHeight;
+  const MIN_H = ()=> vh()*0.16;
+  const MAX_H = ()=> vh()*0.82;
+  const getY = e => e.touches ? e.touches[0].clientY : e.clientY;
 
   function down(e){
-    // 버튼/입력 요소는 드래그가 아니라 클릭으로 처리
-    if(e.target && e.target.closest && e.target.closest('button, input, textarea, a')) return;
-    fromHandle = !!(e.currentTarget === grip || e.currentTarget === head);
-    // 패널 본문에서 시작한 경우: 목록이 맨 위에 있을 때만 드래그로 인정 (아니면 스크롤 우선)
+    // 버튼·입력은 클릭으로 처리
+    if(e.target.closest && e.target.closest('button, input, textarea, a')) return;
+    // 손잡이/헤더에서 시작했는지 판정 (리스너는 panel 하나에만 달아 중복 실행 방지)
+    fromHandle = !!(e.target.closest && (e.target.closest('.panel-grip') || e.target.closest('.panel-head')));
+    // 본문에서 시작했고 이미 스크롤 중이면 스크롤 우선
     if(!fromHandle && panel.scrollTop > 2) return;
+
     dragging = true; moved = false;
-    startY = getY(e);
+    startY = lastY = getY(e);
     startH = panel.getBoundingClientRect().height;
     panel.classList.add('dragging');
-    if(fromHandle && e.cancelable) e.preventDefault();
   }
+
   function move(e){
     if(!dragging) return;
-    const dy = startY - getY(e);
-    if(Math.abs(dy) > 6) moved = true;
-    // 본문에서 시작했는데 위로 스크롤하려는 의도면 드래그 취소하고 스크롤 넘김
+    const y = getY(e);
+    const dy = startY - y;           // 위로 끌면 +
+    lastY = y;
+    if(Math.abs(dy) > 4) moved = true;
+
+    // 본문에서 시작 + 아래로 끌기가 아닌 경우엔 스크롤에 양보
     if(!fromHandle && dy > 0 && panel.scrollHeight > panel.clientHeight + 4){
-      dragging = false; panel.classList.remove('dragging'); panel.style.height=''; return;
+      dragging = false; panel.classList.remove('dragging'); panel.style.height='';
+      return;
     }
-    let h = startH + dy;
-    h = Math.max(vh()*0.14, Math.min(vh()*0.82, h));
+    // 손가락을 그대로 따라오게
+    const h = Math.max(MIN_H(), Math.min(MAX_H(), startH + dy));
     panel.style.height = h + 'px';
     if(e.cancelable) e.preventDefault();
   }
+
   function up(){
     if(!dragging) return;
     dragging = false;
     panel.classList.remove('dragging');
-    const h = panel.getBoundingClientRect().height;
-    const mid = (COLLAPSED() + EXPANDED())/2;
+    const endH = panel.getBoundingClientRect().height;
+    const dy = startY - lastY;       // 총 이동량 (위로 +)
     panel.style.height = '';
+
     if(!moved){
-      if(fromHandle) panel.classList.toggle('expanded'); // 손잡이 탭만 토글
+      // 손잡이/헤더를 그냥 탭하면 토글
+      if(fromHandle) panel.classList.toggle('expanded');
+    } else if(dy > 28){
+      panel.classList.add('expanded');      // 조금만 올려도 확 커짐
+    } else if(dy < -28){
+      panel.classList.remove('expanded');   // 조금만 내려도 원래대로
     } else {
-      if(h >= mid){ panel.classList.add('expanded'); }
-      else { panel.classList.remove('expanded'); }
+      // 애매하면 현재 높이 기준
+      panel.classList.toggle('expanded', endH >= vh()*0.5);
     }
     syncPanelState();
     setTimeout(()=> mapResize(), 340);
   }
-  [grip, head, panel].filter(Boolean).forEach(zone=>{
-    zone.addEventListener('touchstart', down, {passive:false});
-    zone.addEventListener('touchmove', move, {passive:false});
-    zone.addEventListener('touchend', up);
-    zone.addEventListener('mousedown', down);
-  });
+
+  // 리스너는 panel 한 곳에만 (헤더/손잡이 이벤트도 여기로 버블링됨)
+  panel.addEventListener('touchstart', down, {passive:true});
+  panel.addEventListener('touchmove',  move, {passive:false});
+  panel.addEventListener('touchend',   up);
+  panel.addEventListener('touchcancel',up);
+  panel.addEventListener('mousedown',  down);
   window.addEventListener('mousemove', move);
-  window.addEventListener('mouseup', up);
+  window.addEventListener('mouseup',   up);
 })();
 // 패널이 펼쳐지면 지도 위 요소들이 가려지지 않게 정리
 function syncPanelState(){
