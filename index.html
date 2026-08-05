@@ -724,6 +724,18 @@
     0%{ opacity:1; transform:translateY(0) rotate(0deg); }
     100%{ opacity:0; transform:translateY(105vh) rotate(720deg); }
   }
+  /* 다크모드에서 지도 타일만 반전 (핀·오버레이는 그대로) */
+  html[data-theme="dark"] #map img{
+    filter: invert(0.92) hue-rotate(180deg) brightness(0.92) contrast(0.9) saturate(0.85);
+  }
+  .offline-bar{
+    position:fixed; left:14px; right:14px; bottom:calc(14px + env(safe-area-inset-bottom));
+    background:#3A3648; color:#fff; font-size:0.8rem; font-weight:600; text-align:center;
+    padding:12px 16px; border-radius:14px; z-index:8000; box-shadow:0 10px 28px rgba(0,0,0,0.3);
+    transform:translateY(150%); opacity:0; transition:transform .35s cubic-bezier(.22,1,.36,1), opacity .3s;
+    pointer-events:none;
+  }
+  .offline-bar.show{ transform:translateY(0); opacity:1; }
   .banner{
     position:fixed; top:calc(10px + env(safe-area-inset-top)); left:14px; right:14px;
     background:linear-gradient(135deg,var(--accent),var(--accent-2)); color:#fff;
@@ -1087,9 +1099,9 @@
       <span class="big">🧭</span>
       <div><div class="st-label">만나는 곳 (눌러서 변경)</div><div class="st-value" id="meetChipValue">-</div></div>
     </div>
-    <div class="status-chip final hidden" id="finalChip">
+    <div class="status-chip final hidden" id="finalChip" style="cursor:pointer;">
       <span class="big">✅</span>
-      <div><div class="st-label">목적지 (확정)</div><div class="st-value" id="finalValue">-</div></div>
+      <div><div class="st-label">목적지 (눌러서 길찾기)</div><div class="st-value" id="finalValue">-</div></div>
     </div>
   </div>
 
@@ -1166,6 +1178,11 @@
       </div>
       <div class="field hidden" id="meetTimeField"><label>약속 시간</label><input id="meetTimeInput" type="time"></div>
       <div class="toggle-row">
+        <div><div class="tr-label">투표 마감 시간</div><div class="tr-desc">마감되면 투표가 잠겨요</div></div>
+        <label class="switch"><input type="checkbox" id="voteDeadlineToggle"><span class="slider"></span></label>
+      </div>
+      <div class="field hidden" id="voteDeadlineField"><label>마감 일시</label><input id="voteDeadlineInput" type="datetime-local"></div>
+      <div class="toggle-row">
         <div><div class="tr-label">모두 후보 추가 가능</div><div class="tr-desc">끄면 방장만 후보를 추가할 수 있어요</div></div>
         <label class="switch"><input type="checkbox" id="allowAddToggle" checked><span class="slider"></span></label>
       </div>
@@ -1188,6 +1205,7 @@
           <div><b>투표</b> <span id="mvVote">-</span></div>
         </div>
       </div>
+      <button class="btn" style="width:100%; background:var(--line); color:var(--danger); font-weight:800; margin-bottom:10px;" id="exitRoomBtn">🚪 이 모임에서 나가기</button>
       <button class="btn btn-cancel" style="width:100%;" id="memberClose">닫기</button>
     </div>
     <button class="btn btn-cancel" id="leaveRoomBtn" style="width:100%; margin-top:10px;">← 내 모임 목록으로</button>
@@ -1217,9 +1235,11 @@
 <div class="toast" id="toast"></div>
 
 <div class="room-loading hide" id="roomLoading">
-  <div class="spin"></div>
-  <div class="rl-text">방 정보를 불러오는 중...</div>
+  <div class="spin" id="rlSpin"></div>
+  <div class="rl-text" id="rlText">방 정보를 불러오는 중...</div>
+  <button class="btn btn-save hidden" id="rlRetryBtn" style="margin-top:14px; width:auto; padding:12px 28px;">다시 시도</button>
 </div>
+<div class="offline-bar" id="offlineBar">📶 인터넷 연결이 끊겼어요 · 연결되면 자동으로 이어져요</div>
 
 <div class="overlay" id="membersOverlay">
   <div class="sheet">
@@ -1252,6 +1272,7 @@
       <button class="detail-react dislike" id="detailDislikeBtn"><span>👎</span><span id="detailDislikeCount">0</span></button>
       <button class="detail-react like" id="detailLikeBtn"><span>👍</span><span>투표 <span id="detailLikeCount">0</span></span></button>
     </div>
+    <button class="btn" id="detailDirectionsBtn" style="width:100%; margin-top:12px; background:#FEE500; color:#191919; font-weight:800;">🧭 카카오맵 길찾기</button>
     <div id="detailHostActions" class="hidden" style="margin-top:12px; display:flex; gap:10px;">
       <button class="btn btn-save" id="detailConfirmBtn" style="flex:1;">✅ 이곳으로 확정</button>
     </div>
@@ -1306,6 +1327,10 @@
         <span class="dr-icon">🚫</span>
         <span class="dr-label" style="flex:1; text-align:left;">차단한 사용자 <span id="menuBlockedCount" style="color:var(--faint); font-weight:500;"></span></span>
         <span style="color:var(--faint);">›</span>
+      </button>
+      <button class="drawer-item" id="menuDeleteAccBtn" style="color:var(--danger);">
+        <span class="dr-icon">⚠️</span>
+        <span class="dr-label" style="flex:1; text-align:left; color:var(--danger);">계정 삭제</span>
       </button>
       <button class="drawer-item" id="menuPastBtn">
         <span class="dr-icon">📚</span>
@@ -1559,7 +1584,7 @@
 
 // Firebase는 아래에서 동적으로 로드 (로드 실패해도 UI는 멈추지 않음)
 let initializeApp, getDatabase, ref, onValue, set, update, remove, get, child, onDisconnect;
-let getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile, sendPasswordResetEmail;
+let getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile, sendPasswordResetEmail, deleteUser;
 let GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signInAnonymously;
 let fbApp, db, auth;
 let fbReady = false;
@@ -1582,7 +1607,7 @@ async function loadFirebase(){
     const authMod = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js");
     initializeApp = appMod.initializeApp;
     ({ getDatabase, ref, onValue, set, update, remove, get, child, onDisconnect } = dbMod);
-    ({ getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile, sendPasswordResetEmail } = authMod);
+    ({ getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile, sendPasswordResetEmail, deleteUser } = authMod);
     ({ GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signInAnonymously } = authMod);
     fbApp = initializeApp(firebaseConfig);
     db = getDatabase(fbApp);
@@ -1756,7 +1781,14 @@ async function logIn(email, pw){
     let nickname = cred.user.displayName || mail.split('@')[0];
     try{
       const snap = await get(child(ref(db), 'users/'+cred.user.uid));
-      if(snap.exists() && snap.val().nickname) nickname = snap.val().nickname;
+      if(snap.exists()){
+        const u = snap.val();
+        if(u.banned){
+          await signOut(auth);
+          return { ok:false, msg:'이용이 정지된 계정이에요 · 문의는 개발자에게 남겨 주세요' };
+        }
+        if(u.nickname) nickname = u.nickname;
+      }
     }catch(e){}
     return { ok:true, uid:cred.user.uid, nickname };
   }catch(e){
@@ -1847,6 +1879,47 @@ function showScreen(idOrNull){
   if(idOrNull === 'app'){ $('app').classList.add('active'); }
   else if(idOrNull){ $(idOrNull).classList.remove('hidden'); }
   currentScreen = idOrNull;
+}
+
+/* ================= 오프라인 감지 · 로딩 타임아웃 ================= */
+function updateOnlineState(){
+  const off = !navigator.onLine;
+  $('offlineBar').classList.toggle('show', off);
+  if(!off){
+    // 다시 연결되면, 재시도 화면이 떠 있을 경우 자동 재시도
+    if(!$('rlRetryBtn').classList.contains('hidden') && roomCode){
+      retryRoomLoad();
+    }
+  }
+}
+window.addEventListener('online', updateOnlineState);
+window.addEventListener('offline', updateOnlineState);
+document.addEventListener('DOMContentLoaded', ()=>{ const b=$('rlRetryBtn'); if(b) b.addEventListener('click', retryRoomLoad); updateOnlineState(); });
+if(document.readyState!=='loading'){ const b=$('rlRetryBtn'); if(b && !b._wired){ b._wired=true; b.addEventListener('click', retryRoomLoad); } }
+
+let roomLoadTimer = null;
+function startRoomLoadTimeout(){
+  clearTimeout(roomLoadTimer);
+  $('rlSpin').classList.remove('hidden');
+  $('rlRetryBtn').classList.add('hidden');
+  $('rlText').textContent = '방 정보를 불러오는 중...';
+  roomLoadTimer = setTimeout(()=>{
+    // 12초가 지나도 데이터가 안 오면 재시도 화면으로 전환
+    if(!$('roomLoading').classList.contains('hide')){
+      $('rlSpin').classList.add('hidden');
+      $('rlText').textContent = navigator.onLine
+        ? '연결이 불안정해요 😥\n잠시 후 다시 시도해 주세요'
+        : '인터넷 연결이 끊겼어요 📶\n연결을 확인하고 다시 시도해 주세요';
+      $('rlRetryBtn').classList.remove('hidden');
+    }
+  }, 12000);
+}
+function retryRoomLoad(){
+  if(!roomCode) return;
+  if(unsubRoom){ unsubRoom(); unsubRoom=null; }
+  if(unsubMessages){ unsubMessages(); unsubMessages=null; }
+  if(unsubLocations){ unsubLocations(); unsubLocations=null; }
+  enterRoom(); // roomCode 전역값으로 재진입
 }
 
 /* ================= 뒤로가기(안드로이드/브라우저) 처리 ================= */
@@ -2279,6 +2352,7 @@ function enterRoom(){
   showScreen('app');
   $('hRoomCode').textContent = roomCode;
   $('roomLoading').classList.remove('hide');
+  startRoomLoadTimeout();
   clearSearch();
   hideResults();
   if(!map){
@@ -2305,11 +2379,11 @@ function enterRoom(){
     places = room.places || {};
     if(!firstLoad) detectRoomActivity(prevPlaceIds, prevFinal);
     onRoomUpdate();
-    if(firstLoad){ $('roomLoading').classList.add('hide'); firstLoad=false; }
+    if(firstLoad){ clearTimeout(roomLoadTimer); $('roomLoading').classList.add('hide'); firstLoad=false; }
   }, (err)=>{
     console.error(err);
     $('syncDot').classList.add('off');
-    if(firstLoad){ $('roomLoading').classList.add('hide'); firstLoad=false; showToast('연결하지 못했어요 · 인터넷을 확인해 주세요'); }
+    if(firstLoad){ clearTimeout(roomLoadTimer); $('roomLoading').classList.add('hide'); firstLoad=false; showToast('연결하지 못했어요 · 인터넷을 확인해 주세요'); }
   });
 
   subscribeChat();
@@ -2943,7 +3017,12 @@ function startSharingLocation(){
         lat:pos.coords.latitude, lng:pos.coords.longitude, ts:Date.now(), live:true
       }).catch(()=>{});
     },
-    (err)=>{ console.warn('위치 공유 오류', err); showToast('위치를 가져오지 못해 공유를 중단했어요'); stopSharingLocation(); },
+    (err)=>{
+      console.warn('위치 공유 오류', err);
+      if(err && err.code === 1) showToast('위치 권한이 꺼져 있어 공유할 수 없어요 · 폰 설정에서 허용해 주세요');
+      else showToast('위치를 가져오지 못해 공유를 중단했어요');
+      stopSharingLocation();
+    },
     { enableHighAccuracy:true, maximumAge:15000, timeout:15000 }
   );
   showToast('내 위치 공유를 시작했어요 📡');
@@ -3254,6 +3333,9 @@ function clearMemberLocMarkers(){
 }
 
 /* ================= final place ================= */
+function voteClosed(){
+  return !!(room && room.voteDeadline && Date.now() > room.voteDeadline);
+}
 function renderFinal(){
   const chip = $('finalChip');
   if(room.finalPlaceId && places[room.finalPlaceId]){
@@ -3262,6 +3344,11 @@ function renderFinal(){
   } else {
     chip.classList.add('hidden');
   }
+}
+function openKakaoDirections(name, lat, lng){
+  // 카카오맵 길찾기 (앱 설치 시 앱으로, 아니면 웹으로)
+  const url = 'https://map.kakao.com/link/to/' + encodeURIComponent(name) + ',' + lat + ',' + lng;
+  window.open(url, '_blank');
 }
 
 /* ================= 알림 ================= */
@@ -3435,7 +3522,7 @@ function renderList(){
   }
   const sorted = arr.sort((a,b)=> (countVotes(b)-countDislikes(b)) - (countVotes(a)-countDislikes(a)));
   const topVotes = countVotes(sorted[0]);
-  const canVote = room.allowVote || isHost();
+  const canVote = (room.allowVote || isHost()) && !voteClosed();
   listEl.innerHTML = sorted.map((p,i)=>{
     const isFinal = room.finalPlaceId === p.id;
     const isTop = topVotes>0 && countVotes(p)===topVotes && !isFinal;
@@ -3515,10 +3602,12 @@ function handleAction(act, id){
   const p = places[id];
   if(!p) return;
   if(act==='vote'){
+    if(voteClosed()){ showToast('투표가 마감되었어요 ⏰'); return; }
     if(!(room.allowVote || isHost())){ showToast('방장이 투표를 잠갔어요'); return; }
     haptic(12);
     setExclusive(id, 'votes', 'dislikes');
   } else if(act==='dislike'){
+    if(voteClosed()){ showToast('투표가 마감되었어요 ⏰'); return; }
     if(!(room.allowVote || isHost())){ showToast('방장이 투표를 잠갔어요'); return; }
     haptic(10);
     setExclusive(id, 'dislikes', 'votes');
@@ -3745,6 +3834,14 @@ function openSettings(){
     }
     $('allowAddToggle').checked = room.allowAdd !== false;
     $('allowVoteToggle').checked = room.allowVote !== false;
+    const hasDl = !!room.voteDeadline;
+    $('voteDeadlineToggle').checked = hasDl;
+    $('voteDeadlineField').classList.toggle('hidden', !hasDl);
+    if(hasDl){
+      const d = new Date(room.voteDeadline);
+      const p2=(n)=>String(n).padStart(2,'0');
+      $('voteDeadlineInput').value = d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate())+'T'+p2(d.getHours())+':'+p2(d.getMinutes());
+    } else { $('voteDeadlineInput').value=''; }
   } else {
     $('mvDate').textContent = room.meetAt ? formatMeetAt(room.meetAt, room.meetHasTime) : '미정';
     $('mvAdd').textContent = (room.allowAdd!==false) ? '모두 가능' : '방장만';
@@ -3778,9 +3875,13 @@ function saveSettings(){
   const newName = $('editRoomName').value.trim();
   const newEmoji = $('editRoomEmoji').value.trim() || '📍';
   if(!newName){ showToast('모임 이름을 입력해 주세요'); return; }
+  let voteDeadline = null;
+  if($('voteDeadlineToggle').checked && $('voteDeadlineInput').value){
+    voteDeadline = new Date($('voteDeadlineInput').value).getTime();
+  }
   update(ref(db,'rooms/'+roomCode), {
     name: newName, emoji: newEmoji,
-    meetAt, meetHasTime,
+    meetAt, meetHasTime, voteDeadline,
     allowAdd: $('allowAddToggle').checked,
     allowVote: $('allowVoteToggle').checked
   }).then(()=>{ showToast('설정을 저장했어요'); closeSettings(); })
@@ -3928,7 +4029,11 @@ function goToMyLocation(silent){
         zIndex: 40
       });
     },
-    (err)=>{ if(!silent) showToast('위치를 가져오지 못했어요 · 권한을 확인해 주세요'); },
+    (err)=>{
+      if(silent) return;
+      if(err && err.code === 1) showToast('위치 권한이 꺼져 있어요 · 폰 설정에서 허용해 주세요');
+      else showToast('위치를 가져오지 못했어요 · 잠시 후 다시 시도해 주세요');
+    },
     { enableHighAccuracy:true, timeout:8000, maximumAge:60000 }
   );
 }
@@ -3969,6 +4074,10 @@ $('detailConfirmBtn').addEventListener('click', ()=>{
   handleAction(isFinal ? 'unconfirm' : 'confirm', detailPlaceId);
 });
 $('detailDeleteBtn').addEventListener('click', ()=>{ if(!detailPlaceId) return; handleAction('del', detailPlaceId); closeDetail(); });
+$('detailDirectionsBtn').addEventListener('click', ()=>{
+  const p = places[detailPlaceId];
+  if(p) openKakaoDirections(p.name, p.lat, p.lng);
+});
 $('detailReportBtn').addEventListener('click', ()=>{
   const p = places[detailPlaceId];
   if(!p) return;
@@ -3989,6 +4098,10 @@ $('settingsCancel').addEventListener('click', closeSettings);
 $('settingsSave').addEventListener('click', saveSettings);
 $('midpointBtn').addEventListener('click', findMidpoint);
 $('meetChip').addEventListener('click', openMeetManage);
+$('finalChip').addEventListener('click', ()=>{
+  const p = room && room.finalPlaceId ? places[room.finalPlaceId] : null;
+  if(p) openKakaoDirections(p.name, p.lat, p.lng);
+});
 $('meetManageClose').addEventListener('click', ()=> $('meetManageOverlay').classList.remove('show'));
 $('meetManageOverlay').addEventListener('click', (e)=>{ if(e.target.id==='meetManageOverlay') $('meetManageOverlay').classList.remove('show'); });
 $('meetGoBtn').addEventListener('click', ()=>{
@@ -4064,7 +4177,23 @@ $('shareLocBtn').addEventListener('click', onShareLocBtnClick);
 $('meetTimeToggle').addEventListener('change', (e)=>{
   $('meetTimeField').classList.toggle('hidden', !e.target.checked);
 });
+$('voteDeadlineToggle').addEventListener('change', (e)=>{
+  $('voteDeadlineField').classList.toggle('hidden', !e.target.checked);
+});
 $('memberClose').addEventListener('click', closeSettings);
+$('exitRoomBtn').addEventListener('click', async ()=>{
+  if(isHost()){ showToast('방장은 나갈 수 없어요 · 방을 삭제해 주세요'); return; }
+  if(!confirm(`'${room.name}' 모임에서 나갈까요?\n다시 들어오려면 코드가 필요해요.`)) return;
+  try{
+    stopSharingLocation();
+    await remove(ref(db,'rooms/'+roomCode+'/members/'+safeKey(myId)));
+    try{ await remove(ref(db,'rooms/'+roomCode+'/locations/'+safeKey(myId))); }catch(e){}
+    forgetRoom(roomCode);
+    closeSettings();
+    showToast('모임에서 나왔어요 👋');
+    leaveRoom();
+  }catch(e){ console.error(e); showToast('나가지 못했어요 · 인터넷을 확인해 주세요'); }
+});
 $('settingsOverlay').addEventListener('click', (e)=>{ if(e.target.id==='settingsOverlay') closeSettings(); });
 $('leaveRoomBtn').addEventListener('click', leaveRoom);
 $('deleteRoomBtn').addEventListener('click', ()=>{
@@ -4449,14 +4578,29 @@ $('noticeClose').addEventListener('click', ()=> $('noticeOverlay').classList.rem
 $('noticeOverlay').addEventListener('click', (e)=>{ if(e.target.id==='noticeOverlay') $('noticeOverlay').classList.remove('show'); });
 
 const ANNOUNCEMENTS = [
-  { date:'2026-08-05', title:'만나는 곳 추천 기능이 추가되었어요 🧭', body:'멤버들의 현재 위치를 기준으로 지하철역·쇼핑몰 중에서 가장 공평한 집합 장소를 추천해드려요. 후보 장소 목록 위의 “중간지점” 버튼을 눌러보세요.' },
-  { date:'2026-08-05', title:'신고·차단 기능이 추가되었어요 🚩', body:'불쾌한 메시지나 후보는 길게 눌러 신고하거나 해당 사용자를 차단할 수 있어요. 차단한 사용자는 메뉴에서 관리할 수 있어요.' },
-  { date:'2026-08-05', title:'채팅에 공감 기능이 생겼어요 💬', body:'메시지를 길게 누르면 👍❤️😂 같은 이모지로 공감하거나, 복사·삭제·신고할 수 있어요.' },
-  { date:'2026-08-04', title:'지도가 네이버 지도로 바뀌었어요 🗺️', body:'더 정확한 국내 지도와 장소 검색을 위해 네이버 지도와 카카오 장소 검색을 도입했어요.' }
+  { date:'2026-08-05', title:'만나는 곳 추천 기능이 추가되었어요 🧭', body:'멤버들의 현재 위치를 기준으로 지하철역·쇼핑몰 중에서 가장 공평한 집합 장소를 추천해드려요.' }
 ];
-$('menuAnnounceBtn').addEventListener('click', ()=>{
+let liveAnnouncements = null;
+$('menuAnnounceBtn').addEventListener('click', async ()=>{
   closeAccountMenu();
-  $('announceListBox').innerHTML = ANNOUNCEMENTS.map(a=>`
+  $('announceOverlay').classList.add('show');
+  $('announceListBox').innerHTML = '<div class="empty" style="padding:24px;">불러오는 중...</div>';
+  // 관리자가 등록한 공지를 우선 사용하고, 실패하면 기본 목록을 보여준다
+  let list = liveAnnouncements;
+  if(!list){
+    try{
+      const snap = await get(child(ref(db),'announcements'));
+      list = snap.exists()
+        ? Object.values(snap.val()).map(a=>({
+            date: new Date(a.ts||Date.now()).toLocaleDateString('ko-KR'),
+            title: a.title, body: a.body, ts: a.ts||0
+          })).sort((x,y)=> y.ts - x.ts)
+        : [];
+      liveAnnouncements = list;
+    }catch(e){ console.warn('공지 불러오기 실패', e); list = null; }
+  }
+  if(!list || list.length === 0) list = ANNOUNCEMENTS;
+  $('announceListBox').innerHTML = list.map(a=>`
     <div class="notice-item">
       <span class="nt-icon">📢</span>
       <div class="nt-body">
@@ -4465,7 +4609,6 @@ $('menuAnnounceBtn').addEventListener('click', ()=>{
         <div class="nt-time">${escapeHtml(a.date)}</div>
       </div>
     </div>`).join('');
-  $('announceOverlay').classList.add('show');
 });
 $('announceClose').addEventListener('click', ()=> $('announceOverlay').classList.remove('show'));
 $('announceOverlay').addEventListener('click', (e)=>{ if(e.target.id==='announceOverlay') $('announceOverlay').classList.remove('show'); });
@@ -4477,6 +4620,31 @@ $('menuBlockedBtn').addEventListener('click', ()=>{
 });
 $('blockedClose').addEventListener('click', ()=> $('blockedOverlay').classList.remove('show'));
 $('blockedOverlay').addEventListener('click', (e)=>{ if(e.target.id==='blockedOverlay') $('blockedOverlay').classList.remove('show'); });
+$('menuDeleteAccBtn').addEventListener('click', async ()=>{
+  closeAccountMenu();
+  if(!confirm('정말 계정을 삭제할까요?\n\n· 프로필과 알림함이 삭제됩니다\n· 참여했던 모임의 글은 남을 수 있어요\n· 되돌릴 수 없습니다')) return;
+  if(!confirm('마지막 확인이에요.\n계정을 완전히 삭제할까요?')) return;
+  try{
+    const uid = myId;
+    // 데이터 삭제
+    try{ await remove(ref(db,'users/'+uid)); }catch(e){}
+    try{ await remove(ref(db,'notices/'+safeKey(uid))); }catch(e){}
+    // 로그인 계정 삭제 (최근 로그인 상태여야 가능 — 실패 시 삭제 요청 접수)
+    try{
+      if(auth.currentUser) await deleteUser(auth.currentUser);
+      showToast('계정이 삭제되었어요 · 그동안 이용해 주셔서 감사해요');
+    }catch(e){
+      console.warn('auth 계정 삭제 실패, 요청 접수로 대체', e);
+      try{
+        await set(ref(db,'feedback/del_'+Date.now()), {
+          text:'[계정 삭제 요청] UID: '+uid, nickname:myNickname, ts:Date.now()
+        });
+      }catch(e2){}
+      showToast('삭제 요청이 접수되었어요 · 빠르게 처리할게요');
+    }
+  }catch(e){ console.error(e); }
+  doLogout();
+});
 $('menuPastBtn').addEventListener('click', ()=>{
   closeAccountMenu();
   const past = getMyRooms().filter(isPastMeetup);
