@@ -55,6 +55,16 @@
   .meta{ font-size:0.78rem; color:var(--soft); }
   .acts{ display:flex; gap:7px; margin-top:11px; flex-wrap:wrap; }
   .empty{ text-align:center; padding:50px 20px; color:var(--faint); }
+  .stat.tapp{ cursor:pointer; transition:transform .12s, border-color .15s; }
+  .stat.tapp:active{ transform:scale(.97); }
+  .stat.tapp:hover{ border-color:var(--accent); }
+  .detail-view{ position:fixed; inset:0; background:var(--bg); z-index:100; overflow-y:auto; animation:dvIn .22s ease; }
+  @keyframes dvIn{ from{ opacity:0; transform:translateY(14px);} to{ opacity:1; transform:none;} }
+  .detail-inner{ max-width:900px; margin:0 auto; padding:22px 18px 60px; }
+  .detail-top{ display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; position:sticky; top:0; background:var(--bg); padding:6px 0 12px; }
+  textarea{ width:100%; padding:13px 14px; border-radius:12px; border:1px solid var(--line); background:var(--card2); color:var(--text); font-family:inherit; font-size:0.92rem; outline:none; resize:vertical; }
+  textarea:focus{ border-color:var(--accent); }
+  .hint{ font-size:0.8rem; color:var(--soft); margin:0 0 12px; line-height:1.6; }
   .warnbox{ background:rgba(255,107,107,.12); border:1px solid var(--danger); color:#FFC9C9; border-radius:14px; padding:14px 16px; margin-bottom:16px; font-size:0.84rem; line-height:1.6; }
   .empty .big{ font-size:2.4rem; display:block; margin-bottom:10px; }
   .hidden{ display:none !important; }
@@ -100,10 +110,48 @@
     <div class="tabs">
       <button class="tab on" data-tab="reports">🚩 신고<span class="cnt" id="cReports">0</span></button>
       <button class="tab" data-tab="feedback">💬 피드백<span class="cnt" id="cFeedback">0</span></button>
+      <button class="tab" data-tab="notice">📢 공지사항</button>
+      <button class="tab" data-tab="privacy">🔐 개인정보 요청</button>
     </div>
 
     <div id="tabReports"></div>
     <div id="tabFeedback" class="hidden"></div>
+
+    <!-- 공지사항 관리 -->
+    <div id="tabNotice" class="hidden">
+      <div class="item">
+        <div class="row"><span class="badge">새 공지 작성</span></div>
+        <div class="field"><label>제목</label><input id="ncTitle" type="text" placeholder="예: 새 기능이 추가되었어요"></div>
+        <div class="field"><label>내용</label><textarea id="ncBody" rows="4" placeholder="공지 내용을 입력하세요"></textarea></div>
+        <div class="acts">
+          <button class="btn sm" id="ncSaveBtn">공지 등록</button>
+          <button class="btn sm ghost hidden" id="ncCancelBtn">수정 취소</button>
+        </div>
+      </div>
+      <div id="ncList"></div>
+    </div>
+
+    <!-- 개인정보 요청 처리 -->
+    <div id="tabPrivacy" class="hidden">
+      <div class="item">
+        <div class="row"><span class="badge">이용자 조회 · 권리 행사 처리</span></div>
+        <p class="hint">개인정보보호법에 따른 <b>열람·삭제 요청</b>을 처리합니다. 닉네임 또는 이메일로 이용자를 찾으세요.</p>
+        <div class="field"><input id="pvSearch" type="text" placeholder="닉네임 또는 이메일 검색"></div>
+        <div class="acts"><button class="btn sm" id="pvSearchBtn">검색</button></div>
+      </div>
+      <div id="pvResult"></div>
+    </div>
+  </div>
+
+  <!-- 상세 보기 패널 -->
+  <div id="detailView" class="hidden detail-view">
+    <div class="detail-inner">
+      <div class="detail-top">
+        <h2 id="detailTitle" style="margin:0; font-size:1.1rem;"></h2>
+        <button class="btn ghost" id="detailClose" style="width:auto; padding:8px 14px; font-size:0.8rem;">닫기</button>
+      </div>
+      <div id="detailBody"></div>
+    </div>
   </div>
 </div>
 
@@ -111,7 +159,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getDatabase, ref, get, child, remove, update }
+import { getDatabase, ref, get, child, remove, update, set }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 const ADMIN_UID = "EVp5v0HxTGawqF9hWOLcLQTaUih1";
@@ -163,6 +211,7 @@ async function doLogin(){
   $('admLoginBtn').textContent='로그인';
 }
 $('admLogout').addEventListener('click', ()=> signOut(auth));
+$('detailClose').addEventListener('click', ()=> $('detailView').classList.add('hidden'));
 
 onAuthStateChanged(auth, user=>{
   const ok = user && user.uid === ADMIN_UID;
@@ -179,14 +228,16 @@ document.querySelectorAll('.tab').forEach(t=>{
   t.addEventListener('click', ()=>{
     document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
     t.classList.add('on');
-    ['reports','feedback'].forEach(k=>{
+    ['reports','feedback','notice','privacy'].forEach(k=>{
       $('tab'+k.charAt(0).toUpperCase()+k.slice(1)).classList.toggle('hidden', k !== t.dataset.tab);
     });
+    if(t.dataset.tab === 'notice') loadNotices();
   });
 });
 
 /* ---------- 데이터 로드 ---------- */
 let reports = [], feedback = [], reportsErr = null;
+let allUsers = [], allRooms = [];
 async function loadAll(){
   $('tabReports').innerHTML = '<div class="load">불러오는 중...</div>';
   $('tabFeedback').innerHTML = '<div class="load">불러오는 중...</div>';
@@ -310,17 +361,32 @@ async function loadStats(){
   const errs = [];
   try{
     const u = await get(child(ref(db),'users'));
-    if(u.exists()) users = Object.keys(u.val()).length;
+    if(u.exists()){
+      allUsers = Object.entries(u.val()).map(([uid,v])=>({uid, ...v}));
+      allUsers.sort((a,b)=> (b.createdAt||0)-(a.createdAt||0));
+      users = allUsers.length;
+    }
   }catch(e){ console.error(e); errs.push('users: '+(e.code||e.message)); }
   try{
     const r = await get(child(ref(db),'rooms'));
     if(r.exists()){
-      const all = Object.values(r.val());
-      rooms = all.length;
-      all.forEach(x=>{
-        places += x.places ? Object.keys(x.places).length : 0;
-        msgs   += x.messages ? Object.keys(x.messages).length : 0;
-      });
+      allRooms = Object.entries(r.val()).map(([code,v])=>({
+        code,
+        name: v.name || code,
+        emoji: v.emoji || '',
+        hostNickname: v.hostNickname || '',
+        createdAt: v.createdAt || 0,
+        meetAt: v.meetAt || null,
+        memberCount: v.members ? Object.keys(v.members).length : 0,
+        placeCount: v.places ? Object.keys(v.places).length : 0,
+        msgCount: v.messages ? Object.keys(v.messages).length : 0,
+        members: v.members ? Object.values(v.members) : [],
+        finalName: (v.finalPlaceId && v.places && v.places[v.finalPlaceId]) ? v.places[v.finalPlaceId].name : null,
+        meetPoint: v.meetPoint ? v.meetPoint.name : null
+      }));
+      allRooms.sort((a,b)=> (b.createdAt||0)-(a.createdAt||0));
+      rooms = allRooms.length;
+      allRooms.forEach(x=>{ places += x.placeCount; msgs += x.msgCount; });
     }
   }catch(e){ console.error(e); errs.push('rooms: '+(e.code||e.message)); }
   const warn = $('statsWarn');
@@ -333,11 +399,205 @@ async function loadStats(){
   }
   const pend = reports.filter(x=>!x.handled).length;
   $('statsBox').innerHTML = `
-    <div class="stat"><div class="n">${users}</div><div class="l">가입자</div></div>
-    <div class="stat"><div class="n">${rooms}</div><div class="l">모임</div></div>
+    <div class="stat tapp" data-detail="users"><div class="n">${users}</div><div class="l">가입자 ›</div></div>
+    <div class="stat tapp" data-detail="rooms"><div class="n">${rooms}</div><div class="l">모임 ›</div></div>
     <div class="stat"><div class="n">${places}</div><div class="l">후보 장소</div></div>
     <div class="stat"><div class="n">${msgs}</div><div class="l">메시지</div></div>
     <div class="stat"><div class="n" style="color:${pend?'var(--danger)':'var(--ok)'}">${pend}</div><div class="l">미처리 신고</div></div>`;
+  $('statsBox').querySelectorAll('[data-detail]').forEach(el=>{
+    el.addEventListener('click', ()=> openDetail(el.dataset.detail));
+  });
+}
+
+/* ---------- 공지사항 관리 ---------- */
+let notices = [], editingNoticeId = null;
+async function loadNotices(){
+  try{
+    const snap = await get(child(ref(db),'announcements'));
+    notices = snap.exists() ? Object.entries(snap.val()).map(([k,v])=>({key:k,...v})) : [];
+    notices.sort((a,b)=> (b.ts||0)-(a.ts||0));
+  }catch(e){ console.error(e); notices=[]; }
+  renderNotices();
+}
+function renderNotices(){
+  const box = $('ncList');
+  box.innerHTML = notices.length ? notices.map(n=>`
+    <div class="item">
+      <div class="row">
+        <span class="badge">📢 공지</span>
+        <span class="when">${when(n.ts)}</span>
+      </div>
+      <div class="meta"><b style="color:var(--text); font-size:0.95rem;">${esc(n.title)}</b></div>
+      <div class="content">${esc(n.body)}</div>
+      <div class="acts">
+        <button class="btn sm ghost" data-nc-edit="${esc(n.key)}">수정</button>
+        <button class="btn sm danger" data-nc-del="${esc(n.key)}">삭제</button>
+      </div>
+    </div>`).join('') : '<div class="empty"><span class="big">📭</span>등록된 공지가 없어요</div>';
+
+  box.querySelectorAll('[data-nc-edit]').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      const n = notices.find(x=>x.key===b.dataset.ncEdit); if(!n) return;
+      $('ncTitle').value = n.title; $('ncBody').value = n.body;
+      editingNoticeId = n.key;
+      $('ncSaveBtn').textContent = '수정 저장';
+      $('ncCancelBtn').classList.remove('hidden');
+      window.scrollTo({top:0, behavior:'smooth'});
+    });
+  });
+  box.querySelectorAll('[data-nc-del]').forEach(b=>{
+    b.addEventListener('click', async ()=>{
+      if(!confirm('이 공지를 삭제할까요?')) return;
+      try{ await remove(ref(db,'announcements/'+b.dataset.ncDel)); loadNotices(); }
+      catch(e){ alert('삭제 실패: '+e.message); }
+    });
+  });
+}
+$('ncSaveBtn').addEventListener('click', async ()=>{
+  const title = $('ncTitle').value.trim(), body = $('ncBody').value.trim();
+  if(!title || !body){ alert('제목과 내용을 모두 입력해 주세요'); return; }
+  const id = editingNoticeId || ('an_'+Date.now());
+  try{
+    await set(ref(db,'announcements/'+id), {
+      id, title, body,
+      ts: editingNoticeId ? (notices.find(n=>n.key===editingNoticeId)?.ts || Date.now()) : Date.now(),
+      updatedAt: Date.now()
+    });
+    $('ncTitle').value=''; $('ncBody').value='';
+    editingNoticeId = null;
+    $('ncSaveBtn').textContent = '공지 등록';
+    $('ncCancelBtn').classList.add('hidden');
+    loadNotices();
+    alert('저장했습니다');
+  }catch(e){ alert('저장 실패: '+e.message); }
+});
+$('ncCancelBtn').addEventListener('click', ()=>{
+  $('ncTitle').value=''; $('ncBody').value='';
+  editingNoticeId = null;
+  $('ncSaveBtn').textContent = '공지 등록';
+  $('ncCancelBtn').classList.add('hidden');
+});
+
+/* ---------- 개인정보 열람·삭제 요청 처리 ---------- */
+$('pvSearchBtn').addEventListener('click', doPrivacySearch);
+$('pvSearch').addEventListener('keydown', e=>{ if(e.key==='Enter') doPrivacySearch(); });
+function doPrivacySearch(){
+  const q = $('pvSearch').value.trim().toLowerCase();
+  const box = $('pvResult');
+  if(!q){ box.innerHTML=''; return; }
+  const hits = allUsers.filter(u=>
+    (u.nickname||'').toLowerCase().includes(q) ||
+    (u.email||'').toLowerCase().includes(q) ||
+    (u.uid||'').toLowerCase().includes(q)
+  );
+  box.innerHTML = hits.length ? hits.map(u=>`
+    <div class="item ${u.banned?'flag':''}">
+      <div class="row">
+        <span class="badge">${esc(u.provider==='guest'?'게스트':(u.provider==='google'?'Google':'이메일'))}</span>
+        ${u.isMinor?'<span class="badge red">만 14세 미만</span>':''}
+        ${u.banned?'<span class="badge red">이용 정지됨</span>':''}
+        <span class="when">${when(u.createdAt)}</span>
+      </div>
+      <div class="meta">
+        <b style="color:var(--text); font-size:0.95rem;">${esc(u.nickname||'(닉네임 없음)')}</b><br>
+        ${u.email?'이메일: '+esc(u.email)+'<br>':''}
+        ${u.birth?'생년월일: '+esc(u.birth)+'<br>':''}
+        ${u.guardianEmail?'보호자: '+esc(u.guardianEmail)+'<br>':''}
+        <span style="color:var(--faint); font-size:0.72rem;">UID: ${esc(u.uid)}</span>
+      </div>
+      <div class="acts">
+        <button class="btn sm ghost" data-pv-export="${esc(u.uid)}">📄 정보 내려받기(열람권)</button>
+        <button class="btn sm ghost" data-pv-ban="${esc(u.uid)}">${u.banned?'정지 해제':'이용 정지'}</button>
+        <button class="btn sm danger" data-pv-del="${esc(u.uid)}">🗑️ 개인정보 삭제</button>
+      </div>
+    </div>`).join('') : '<div class="empty"><span class="big">🔍</span>검색 결과가 없어요</div>';
+
+  box.querySelectorAll('[data-pv-export]').forEach(b=>{
+    b.addEventListener('click', ()=> exportUserData(b.dataset.pvExport));
+  });
+  box.querySelectorAll('[data-pv-ban]').forEach(b=>{
+    b.addEventListener('click', async ()=>{
+      const uid = b.dataset.pvBan;
+      const u = allUsers.find(x=>x.uid===uid);
+      const next = !u.banned;
+      if(!confirm(next ? '이 이용자를 정지할까요?\n정지되면 앱 이용이 차단됩니다.' : '정지를 해제할까요?')) return;
+      try{
+        await update(ref(db,'users/'+uid), { banned: next, bannedAt: next?Date.now():null });
+        u.banned = next;
+        doPrivacySearch();
+        alert(next?'정지했습니다':'정지를 해제했습니다');
+      }catch(e){ alert('실패: '+e.message); }
+    });
+  });
+  box.querySelectorAll('[data-pv-del]').forEach(b=>{
+    b.addEventListener('click', async ()=>{
+      const uid = b.dataset.pvDel;
+      if(!confirm('이 이용자의 개인정보를 삭제할까요?\n\n· 계정 프로필과 알림함이 삭제됩니다\n· 되돌릴 수 없습니다\n\n(개인정보보호법상 삭제 요청 처리용)')) return;
+      try{
+        await remove(ref(db,'users/'+uid));
+        await remove(ref(db,'notices/'+uid));
+        alert('삭제했습니다. Firebase 콘솔 > Authentication 에서 로그인 계정도 함께 삭제해 주세요.');
+        loadStats().then(()=> doPrivacySearch());
+      }catch(e){ alert('삭제 실패: '+e.message); }
+    });
+  });
+}
+function exportUserData(uid){
+  const u = allUsers.find(x=>x.uid===uid);
+  if(!u) return;
+  const joined = allRooms.filter(r=> r.members.some(m=> m.id===uid))
+    .map(r=>({ code:r.code, name:r.name, memberCount:r.memberCount }));
+  const data = { 계정정보:u, 참여중인모임:joined, 내려받은시각:new Date().toISOString() };
+  const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `userdata_${uid}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+/* ---------- 상세 보기 ---------- */
+function openDetail(kind){
+  const box = $('detailBody');
+  if(kind === 'users'){
+    $('detailTitle').textContent = '👥 가입자 ' + allUsers.length + '명';
+    box.innerHTML = allUsers.length ? allUsers.map(u=>{
+      const prov = u.provider === 'guest' ? '게스트' : (u.provider === 'google' ? 'Google' : '이메일');
+      return `<div class="item">
+        <div class="row">
+          <span class="badge">${esc(prov)}</span>
+          ${u.isMinor ? '<span class="badge red">만 14세 미만</span>' : ''}
+          <span class="when">${when(u.createdAt)}</span>
+        </div>
+        <div class="meta">
+          <b style="color:var(--text); font-size:0.92rem;">${esc(u.nickname || '(닉네임 없음)')}</b><br>
+          ${u.email ? '이메일: '+esc(u.email)+'<br>' : ''}
+          ${u.birth ? '생년월일: '+esc(u.birth)+'<br>' : ''}
+          ${u.guardianEmail ? '보호자: '+esc(u.guardianEmail)+'<br>' : ''}
+          <span style="color:var(--faint); font-size:0.72rem;">UID: ${esc(u.uid)}</span>
+        </div>
+      </div>`;
+    }).join('') : '<div class="empty"><span class="big">👤</span>가입자가 없어요</div>';
+  } else {
+    $('detailTitle').textContent = '🗺️ 모임 ' + allRooms.length + '개';
+    box.innerHTML = allRooms.length ? allRooms.map(r=>`
+      <div class="item">
+        <div class="row">
+          <span class="badge">${esc(r.code)}</span>
+          <span class="when">${when(r.createdAt)}</span>
+        </div>
+        <div class="meta">
+          <b style="color:var(--text); font-size:0.95rem;">${esc(r.emoji)} ${esc(r.name)}</b><br>
+          방장: ${esc(r.hostNickname || '-')} · 멤버 ${r.memberCount}명<br>
+          후보 ${r.placeCount}곳 · 메시지 ${r.msgCount}개<br>
+          ${r.meetAt ? '약속일: '+new Date(r.meetAt).toLocaleDateString('ko-KR')+'<br>' : ''}
+          ${r.meetPoint ? '만나는 곳: '+esc(r.meetPoint)+'<br>' : ''}
+          ${r.finalName ? '확정 장소: '+esc(r.finalName)+'<br>' : ''}
+          ${r.members.length ? '참여자: '+r.members.map(m=>esc(m.nickname||'?')).join(', ') : ''}
+        </div>
+      </div>`).join('') : '<div class="empty"><span class="big">🗺️</span>모임이 없어요</div>';
+  }
+  $('detailView').classList.remove('hidden');
 }
 </script>
 </body>
