@@ -813,10 +813,10 @@
       <p class="login-desc">로그인하면 어느 기기에서든 내 모임과<br>투표 기록이 그대로 이어져요.</p>
 
       <div class="field">
-        <label>아이디</label>
+        <label>이메일</label>
         <div class="icon-input">
-          <span class="ii-icon">👤</span>
-          <input id="loginId" type="text" placeholder="아이디 또는 이메일" maxlength="60" autocomplete="username">
+          <span class="ii-icon">📧</span>
+          <input id="loginId" type="email" placeholder="가입한 이메일" maxlength="60" autocomplete="email">
         </div>
       </div>
       <div class="field">
@@ -826,7 +826,7 @@
           <input id="loginPw" type="password" placeholder="비밀번호를 입력하세요" maxlength="40" autocomplete="current-password">
         </div>
       </div>
-      <div class="err" id="loginErr">아이디와 비밀번호를 확인해 주세요!</div>
+      <div class="err" id="loginErr">이메일과 비밀번호를 확인해 주세요!</div>
 
       <div style="display:flex; align-items:center; justify-content:center; gap:16px; margin-top:8px;">
         <button class="back-link" id="goSignup" style="padding:0;">회원가입</button>
@@ -857,16 +857,31 @@
   <div class="card">
     <div class="brand-head"><div class="brand-title" style="font-size:1.4rem;">회원가입</div></div>
     <div class="field">
-      <label>아이디</label>
-      <input id="signupId" type="text" placeholder="영문/숫자 아이디" maxlength="20" autocomplete="username">
-    </div>
-    <div class="field">
-      <label>이메일 (비밀번호를 잊었을 때 필요해요)</label>
+      <label>이메일 (로그인에 사용됩니다)</label>
       <input id="signupEmail" type="email" placeholder="example@email.com" maxlength="60" autocomplete="email">
     </div>
     <div class="field">
       <label>닉네임 (다른 사람에게 보여질 이름)</label>
       <input id="signupNickname" type="text" placeholder="닉네임을 입력해 주세요" maxlength="10">
+    </div>
+    <div class="field">
+      <label>생년월일</label>
+      <input id="signupBirth" type="date">
+    </div>
+    <div id="guardianBox" class="hidden" style="background:var(--accent-soft); border:1px solid var(--accent); border-radius:14px; padding:14px 16px; margin-bottom:14px;">
+      <div style="font-size:0.85rem; font-weight:800; color:var(--accent); margin-bottom:6px;">👨‍👩‍👧 보호자 동의가 필요해요</div>
+      <div style="font-size:0.79rem; color:var(--text-soft); line-height:1.6; margin-bottom:10px;">
+        만 14세 미만은 개인정보 수집·이용에 <b>법정대리인(보호자)의 동의</b>가 필요합니다.
+        보호자님께 <a href="./privacy.html" target="_blank" style="color:var(--accent);">개인정보처리방침</a>을 보여드리고 동의를 받아 주세요.
+      </div>
+      <label style="display:flex; align-items:flex-start; gap:9px; font-size:0.82rem; font-weight:600; cursor:pointer;">
+        <input type="checkbox" id="guardianAgree" style="margin-top:3px; width:18px; height:18px; flex:none;">
+        <span>보호자에게 확인받았으며, 보호자가 개인정보 수집·이용에 동의합니다</span>
+      </label>
+      <div class="field" style="margin-top:12px; margin-bottom:0;">
+        <label style="font-size:0.76rem;">보호자 이메일 (동의 확인용)</label>
+        <input id="guardianEmail" type="email" placeholder="보호자 이메일" maxlength="60">
+      </div>
     </div>
     <div class="field">
       <label>비밀번호</label>
@@ -1591,11 +1606,9 @@ function applyTheme(t){
 function toggleTheme(){ applyTheme(getTheme()==='dark' ? 'light' : 'dark'); }
 
 /* ================= 계정 시스템 (Firebase Authentication 사용) =================
-   태현이 정하는 "아이디"를 내부적으로 가짜 이메일 형식으로 바꿔서
-   Firebase의 정식 로그인 서버(Authentication)에 등록/로그인해.
-   비밀번호는 Firebase 서버에서만 확인하고, 우리 코드나 데이터베이스에는
-   저장되지도, 지나가지도 않아 — 지금까지 중 제일 안전한 방식이야. */
-function idToEmail(id){ return safeKey(id).toLowerCase() + '@eodigaji.app'; }
+   이메일 주소를 로그인 키로 사용한다. 비밀번호는 Firebase 서버에서만 확인하며
+   우리 코드나 데이터베이스에는 저장되지도, 지나가지도 않는다.
+   이메일이 실제 주소이므로 비밀번호 재설정 메일 발송이 가능하다. */
 function isEmailFormat(s){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s); }
 
 const LS_GUEST = 'bijeong-guest-room-v1';
@@ -1625,18 +1638,34 @@ function saveSession(id, nickname){
 }
 function clearSession(){ try{ localStorage.removeItem(LS_SESSION); }catch(e){} }
 
-async function signUp(id, email, pw, nickname){
+function calcAge(birthStr){
+  if(!birthStr) return null;
+  const b = new Date(birthStr);
+  if(isNaN(b.getTime())) return null;
+  const now = new Date();
+  let age = now.getFullYear() - b.getFullYear();
+  const m = now.getMonth() - b.getMonth();
+  if(m < 0 || (m === 0 && now.getDate() < b.getDate())) age--;
+  return age;
+}
+async function signUp(email, pw, nickname, birth, guardianEmail){
   if(!fbReady){ const ok = await loadFirebase(); if(!ok) return { ok:false, msg:'서버에 연결하지 못했어요 · 인터넷을 확인해 주세요' }; }
-  if(!/^[a-zA-Z0-9_]{3,20}$/.test(id)){ return { ok:false, msg:'아이디는 영문/숫자/밑줄로 3~20자여야 해요' }; }
-  if(!isEmailFormat(email)){ return { ok:false, msg:'이메일 형식을 확인해 주세요' }; }
+  if(!isEmailFormat(email)) return { ok:false, msg:'이메일 형식을 확인해 주세요' };
+  const age = calcAge(birth);
+  if(age === null) return { ok:false, msg:'생년월일을 입력해 주세요' };
+  if(age < 0 || age > 120) return { ok:false, msg:'생년월일을 다시 확인해 주세요' };
   try{
-    // 아이디 중복 확인 (이메일이 로그인 키가 되므로 아이디는 따로 검사)
-    const dupSnap = await get(child(ref(db), 'usernames/'+safeKey(id).toLowerCase()));
-    if(dupSnap.exists()) return { ok:false, msg:'이미 사용 중인 아이디예요 · 다른 아이디를 써주세요' };
     const cred = await createUserWithEmailAndPassword(auth, email, pw);
     try{ await updateProfile(cred.user, { displayName: nickname }); }catch(e){}
-    await set(ref(db, 'users/'+cred.user.uid), { id, email, nickname, provider:'password', createdAt:Date.now() });
-    try{ await set(ref(db, 'usernames/'+safeKey(id).toLowerCase()), { uid:cred.user.uid, email }); }catch(e){}
+    const profile = {
+      email, nickname, birth, provider:'password', createdAt:Date.now(),
+      isMinor: age < 14
+    };
+    if(age < 14 && guardianEmail){
+      profile.guardianEmail = guardianEmail;
+      profile.guardianConsentAt = Date.now();
+    }
+    await set(ref(db, 'users/'+cred.user.uid), profile);
     return { ok:true, uid:cred.user.uid, nickname };
   }catch(e){
     console.error(e);
@@ -1646,21 +1675,13 @@ async function signUp(id, email, pw, nickname){
     return { ok:false, msg:'가입하지 못했어요 · 다시 시도해 주세요' };
   }
 }
-async function resolveLoginEmail(idOrEmail){
-  // 이메일이면 그대로, 아이디면 usernames 매핑 → 없으면 예전 가짜 이메일 방식(레거시 계정)
-  if(isEmailFormat(idOrEmail)) return idOrEmail;
-  try{
-    const snap = await get(child(ref(db), 'usernames/'+safeKey(idOrEmail).toLowerCase()));
-    if(snap.exists() && snap.val().email) return snap.val().email;
-  }catch(e){}
-  return idToEmail(idOrEmail); // 레거시 계정 호환
-}
-async function logIn(idOrEmail, pw){
+async function logIn(email, pw){
   if(!fbReady){ const ok = await loadFirebase(); if(!ok) return { ok:false, msg:'서버에 연결하지 못했어요 · 인터넷을 확인해 주세요' }; }
+  const mail = (email||'').trim();
+  if(!isEmailFormat(mail)) return { ok:false, msg:'이메일 형식으로 입력해 주세요' };
   try{
-    const email = await resolveLoginEmail(idOrEmail.trim());
-    const cred = await signInWithEmailAndPassword(auth, email, pw);
-    let nickname = cred.user.displayName || idOrEmail;
+    const cred = await signInWithEmailAndPassword(auth, mail, pw);
+    let nickname = cred.user.displayName || mail.split('@')[0];
     try{
       const snap = await get(child(ref(db), 'users/'+cred.user.uid));
       if(snap.exists() && snap.val().nickname) nickname = snap.val().nickname;
@@ -1668,27 +1689,24 @@ async function logIn(idOrEmail, pw){
     return { ok:true, uid:cred.user.uid, nickname };
   }catch(e){
     console.error(e);
-    if(e.code === 'auth/user-not-found' || e.code === 'auth/invalid-credential') return { ok:false, msg:'아이디(또는 이메일)나 비밀번호가 맞지 않아요' };
+    if(e.code === 'auth/user-not-found' || e.code === 'auth/invalid-credential') return { ok:false, msg:'이메일 또는 비밀번호가 맞지 않아요' };
     if(e.code === 'auth/wrong-password') return { ok:false, msg:'비밀번호가 일치하지 않아요' };
     if(e.code === 'auth/too-many-requests') return { ok:false, msg:'시도가 너무 많았어요 · 잠시 후 다시 해주세요' };
+    if(e.code === 'auth/invalid-email') return { ok:false, msg:'이메일 형식을 확인해 주세요' };
     return { ok:false, msg:'로그인하지 못했어요 · 다시 시도해 주세요' };
   }
 }
-async function requestPasswordReset(idOrEmail){
+async function requestPasswordReset(email){
   if(!fbReady){ const ok = await loadFirebase(); if(!ok){ showToast('서버에 연결하지 못했어요'); return; } }
-  const raw = (idOrEmail||'').trim();
-  if(!raw){ showToast('아이디 또는 이메일을 먼저 입력해 주세요'); return; }
+  const mail = (email||'').trim();
+  if(!isEmailFormat(mail)){ showToast('가입할 때 쓴 이메일을 입력해 주세요'); return; }
   try{
-    const email = await resolveLoginEmail(raw);
-    if(email.endsWith('@eodigaji.app')){
-      showToast('이메일이 등록되지 않은 계정이에요 · 재설정을 지원하지 않아요');
-      return;
-    }
-    await sendPasswordResetEmail(auth, email);
+    await sendPasswordResetEmail(auth, mail);
     showToast('비밀번호 재설정 메일을 보냈어요 · 메일함을 확인해 주세요 📮');
   }catch(e){
     console.error(e);
-    showToast('재설정 메일을 보내지 못했어요 · 입력값을 확인해 주세요');
+    if(e.code === 'auth/user-not-found'){ showToast('가입되지 않은 이메일이에요'); return; }
+    showToast('재설정 메일을 보내지 못했어요 · 이메일을 확인해 주세요');
   }
 }
 function applySession(id, nickname){
@@ -2023,7 +2041,7 @@ $('guestNickname').addEventListener('keydown', (e)=>{ if(e.key==='Enter') guestJ
 $('loginBtn').addEventListener('click', async ()=>{
   const id = $('loginId').value.trim();
   const pw = $('loginPw').value;
-  if(!id || !pw){ $('loginErr').textContent='아이디와 비밀번호를 확인해 주세요!'; $('loginErr').style.display='block'; return; }
+  if(!id || !pw){ $('loginErr').textContent='이메일과 비밀번호를 확인해 주세요!'; $('loginErr').style.display='block'; return; }
   $('loginErr').style.display='none';
   $('loginBtn').textContent='확인 중...';
   const res = await logIn(id, pw);
@@ -2036,27 +2054,46 @@ $('loginBtn').addEventListener('click', async ()=>{
 $('goSignup').addEventListener('click', ()=> showScreen('signupScreen'));
 $('resetPwBtn').addEventListener('click', ()=>{
   const v = $('loginId').value.trim();
-  if(!v){ showToast('위 칸에 아이디 또는 이메일을 먼저 입력해 주세요'); $('loginId').focus(); return; }
+  if(!v){ showToast('위 칸에 가입한 이메일을 먼저 입력해 주세요'); $('loginId').focus(); return; }
   requestPasswordReset(v);
 });
 
 /* ---- signup ---- */
+$('signupBirth').addEventListener('change', ()=>{
+  const age = calcAge($('signupBirth').value);
+  const need = (age !== null && age < 14);
+  $('guardianBox').classList.toggle('hidden', !need);
+});
 $('signupBtn').addEventListener('click', async ()=>{
-  const id = $('signupId').value.trim();
   const email = $('signupEmail').value.trim();
   const nickname = $('signupNickname').value.trim();
+  const birth = $('signupBirth').value;
   const pw = $('signupPw').value;
   const pw2 = $('signupPw2').value;
-  if(!id || !email || !nickname || !pw){ $('signupErr').textContent='빈칸 없이 모두 입력해 주세요!'; $('signupErr').style.display='block'; return; }
-  if(pw.length < 6){ $('signupErr').textContent='비밀번호는 6자 이상으로 입력해 주세요'; $('signupErr').style.display='block'; return; }
-  if(pw !== pw2){ $('signupErr').textContent='비밀번호가 서로 달라요'; $('signupErr').style.display='block'; return; }
+  const showErr = (m)=>{ $('signupErr').textContent=m; $('signupErr').style.display='block'; };
+
+  if(!email || !nickname || !birth || !pw){ showErr('빈칸 없이 모두 입력해 주세요!'); return; }
+  const age = calcAge(birth);
+  if(age === null){ showErr('생년월일을 확인해 주세요'); return; }
+  if(pw.length < 6){ showErr('비밀번호는 6자 이상으로 입력해 주세요'); return; }
+  if(pw !== pw2){ showErr('비밀번호가 서로 달라요'); return; }
+
+  let guardianEmail = '';
+  if(age < 14){
+    if(!$('guardianAgree').checked){ showErr('보호자 동의에 체크해 주세요'); return; }
+    guardianEmail = $('guardianEmail').value.trim();
+    if(!guardianEmail){ showErr('보호자 이메일을 입력해 주세요'); return; }
+  }
+
   $('signupErr').style.display='none';
   $('signupBtn').textContent='가입 중...';
-  const res = await signUp(id, email, pw, nickname);
+  const res = await signUp(email, pw, nickname, birth, guardianEmail);
   $('signupBtn').textContent='가입하고 시작하기 →';
-  if(!res.ok){ $('signupErr').textContent=res.msg; $('signupErr').style.display='block'; return; }
+  if(!res.ok){ showErr(res.msg); return; }
   applySession(res.uid, nickname);
-  $('signupId').value=''; $('signupEmail').value=''; $('signupNickname').value=''; $('signupPw').value=''; $('signupPw2').value='';
+  ['signupEmail','signupNickname','signupBirth','signupPw','signupPw2','guardianEmail'].forEach(id=>{ $(id).value=''; });
+  $('guardianAgree').checked = false;
+  $('guardianBox').classList.add('hidden');
   showToast('가입 완료! 환영해요 🎉');
   afterAuthSuccess();
 });
