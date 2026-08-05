@@ -513,14 +513,6 @@
   .map-wrap.panel-open .member-legend,
   .map-wrap.panel-open .map-controls{ opacity:0; pointer-events:none; transition:opacity 0.2s; }
   .map-controls, .member-legend{ transition:opacity 0.25s; }
-  .ml-chip{
-    flex:none; display:flex; align-items:center; gap:5px;
-    background:var(--surface-strong); backdrop-filter:blur(var(--blur)); -webkit-backdrop-filter:blur(var(--blur));
-    border:1px solid var(--border); border-radius:20px; padding:4px 10px 4px 5px;
-    font-size:0.7rem; font-weight:700; color:var(--text); box-shadow:0 2px 8px rgba(23,25,35,0.1);
-    white-space:nowrap;
-  }
-  .ml-dot{ width:16px; height:16px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; font-size:0.55rem; font-weight:800; }
   .search-wrap{ position:absolute; top:12px; left:12px; right:12px; z-index:10; display:flex; flex-direction:column; align-items:flex-start; }
   .search-wrap .search-results{ width:100%; align-self:stretch; }
   .search-bar{
@@ -596,6 +588,29 @@
   .mp-alt-dist{ font-size:0.72rem; font-weight:700; color:var(--accent); background:var(--accent-soft); padding:3px 8px; border-radius:9px; }
   .meet-pin{ width:42px; height:42px; border-radius:50% 50% 50% 4px; transform:rotate(-45deg); background:linear-gradient(135deg,#F7931E,#FFB84D); display:flex; align-items:center; justify-content:center; border:3px solid #fff; box-shadow:0 4px 14px rgba(247,147,30,0.5); }
   .meet-pin span{ transform:rotate(45deg); font-size:17px; }
+  /* 핀 선택 시 뿅 튀어오르는 애니메이션 */
+  .pin.pop{ animation:pinPop 0.34s cubic-bezier(0.34,1.7,0.5,1) forwards; }
+  @keyframes pinPop{
+    0%{ transform:rotate(-45deg) scale(1); }
+    55%{ transform:rotate(-45deg) scale(1.42); }
+    100%{ transform:rotate(-45deg) scale(1.28); }
+  }
+  .pin.unpop{ animation:pinUnpop 0.26s cubic-bezier(0.4,0,0.2,1) forwards; }
+  @keyframes pinUnpop{
+    0%{ transform:rotate(-45deg) scale(1.28); }
+    100%{ transform:rotate(-45deg) scale(1); }
+  }
+  .meet-pin.pop{ animation:meetPop 0.34s cubic-bezier(0.34,1.7,0.5,1) forwards; }
+  @keyframes meetPop{
+    0%{ transform:rotate(-45deg) scale(1); }
+    55%{ transform:rotate(-45deg) scale(1.4); }
+    100%{ transform:rotate(-45deg) scale(1.26); }
+  }
+  .meet-pin.unpop{ animation:meetUnpop 0.26s cubic-bezier(0.4,0,0.2,1) forwards; }
+  @keyframes meetUnpop{
+    0%{ transform:rotate(-45deg) scale(1.26); }
+    100%{ transform:rotate(-45deg) scale(1); }
+  }
   .midpoint-pin{ width:40px; height:40px; border-radius:50%; background:var(--surface-strong); border:2.5px solid var(--accent); display:flex; align-items:center; justify-content:center; font-size:1.15rem; box-shadow:0 6px 18px rgba(91,91,214,0.4); animation:mpPop 0.4s cubic-bezier(0.34,1.56,0.64,1); }
   @keyframes mpPop{ from{ transform:scale(0);} to{ transform:scale(1);} }
   .naver-iw{ border-radius:15px; box-shadow:var(--shadow-lg); background:var(--sheet-bg); backdrop-filter:blur(var(--blur)); -webkit-backdrop-filter:blur(var(--blur)); color:var(--text); padding:12px 14px; max-width:220px; border:1px solid var(--border); }
@@ -1641,6 +1656,10 @@ function toggleTheme(){ applyTheme(getTheme()==='dark' ? 'light' : 'dark'); }
 function isEmailFormat(s){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s); }
 
 const LS_GUEST = 'bijeong-guest-room-v1';
+const LS_GUEST_UID = 'bijeong-guest-uid-v1';
+const LS_GUEST_NICK = 'bijeong-guest-nick-v1';
+function getGuestUid(){ try{ return localStorage.getItem(LS_GUEST_UID); }catch(e){ return null; } }
+function saveGuestUid(uid){ try{ localStorage.setItem(LS_GUEST_UID, uid); }catch(e){} }
 let isGuestMode = false;
 function guestRoom(){ try{ return localStorage.getItem(LS_GUEST); }catch(e){ return null; } }
 function checkGuestMode(){
@@ -3000,15 +3019,10 @@ async function findMidpoint(){
     kakaoCategorySearch('AT4', cLat, cLng, radius)    // 관광명소·랜드마크
   ]);
 
-  const pool = [];
+  let pool = [];
   const seen = new Set();
-  // 카테고리의 마지막 항목이 진짜 그 시설인지 확인 (건물 안 개별 매장 걸러내기)
-  const leafCat = (c)=> (c||'').split('>').pop().trim();
-  const push = (arr, type, weight, allowedLeaves)=>{
+  const push = (arr, type, weight)=>{
     arr.forEach(it=>{
-      const leaf = leafCat(it.category_name);
-      // '뮈뮈에르 현대백화점목동점' 같은 입점 매장 제외 — 카테고리 말단이 시설 자체여야 함
-      if(allowedLeaves && !allowedLeaves.some(x=> leaf.includes(x))) return;
       const key = it.place_name + '|' + it.x;
       if(seen.has(key)) return;
       seen.add(key);
@@ -3022,11 +3036,29 @@ async function findMidpoint(){
       });
     });
   };
-  push(subways, '지하철역', 1.0, ['지하철']);
-  push(malls, '복합쇼핑몰', 0.82, ['쇼핑몰','복합쇼핑']);
-  push(depts, '백화점', 0.78, ['백화점']);
-  push(marts, '대형마트', 0.7, ['대형마트','마트']);
-  push(spots, '주요 장소', 0.75, ['관광','명소','공원','문화시설','전시']);
+  push(subways, '지하철역', 1.0);
+  push(malls, '복합쇼핑몰', 0.82);
+  push(depts, '백화점', 0.78);
+  push(marts, '대형마트', 0.7);
+  push(spots, '주요 장소', 0.75);
+
+  // ── 건물 안 입점 매장 걸러내기 ──
+  // '뮈뮈에르 현대백화점목동점'처럼 건물명 앞에 상호가 붙은 항목을 제거한다.
+  // 같은 주소(같은 건물)에 여러 결과가 있으면 이름이 가장 짧은 것이 건물 자체다.
+  const byAddr = new Map();
+  pool.forEach(c=>{
+    const k = c.addr || (c.lat.toFixed(4)+','+c.lng.toFixed(4));
+    const cur = byAddr.get(k);
+    if(!cur || c.name.length < cur.name.length) byAddr.set(k, c);
+  });
+  pool = Array.from(byAddr.values());
+
+  // 다른 후보의 이름을 통째로 품고 있으면(= 그 건물 안 매장) 제거
+  const names = pool.map(c=> c.name.replace(/\s/g,''));
+  pool = pool.filter((c,i)=>{
+    const me = names[i];
+    return !names.some((other,j)=> j!==i && other.length < me.length && me.includes(other));
+  });
 
   if(pool.length === 0){
     $('midpointLoading').classList.add('hidden');
@@ -3133,9 +3165,18 @@ function renderMeetPoint(){
     zIndex: 400
   });
   naver.maps.Event.addListener(meetPointMarker, 'click', ()=>{
+    // 이미 열려 있으면 관리 시트로 진입
+    if(openPopupId === '__meet__' && sharedInfoWindow && sharedInfoWindow.getMap()){
+      closeMarkerPopup();
+      openMeetManage();
+      return;
+    }
+    if(openPopupId && markers[openPopupId]) unpopPin(markers[openPopupId]);
+    popPin(meetPointMarker);
     const iw = getInfoWindow();
-    iw.setContent(`<div class="naver-iw"><div class="pop-name">🧭 만나는 곳</div><div class="pop-memo">${escapeHtml(mp.name)}</div><div class="pop-meta">${escapeHtml(mp.setBy||'')}님이 정함</div></div>`);
+    iw.setContent(`<div class="naver-iw"><div class="pop-name">🧭 만나는 곳</div><div class="pop-memo">${escapeHtml(mp.name)}</div><div class="pop-meta">${escapeHtml(mp.setBy||'')}님이 정함 · 한 번 더 누르면 변경</div></div>`);
     iw.open(map, meetPointMarker);
+    openPopupId = '__meet__';
   });
 }
 function renderMemberLocations(locs){
@@ -3274,7 +3315,21 @@ function renderMarkers(){
 let openPopupId = null;
 function closeMarkerPopup(){
   if(sharedInfoWindow){ try{ sharedInfoWindow.close(); }catch(e){} }
+  if(openPopupId && markers[openPopupId]) unpopPin(markers[openPopupId]);
+  if(meetPointMarker) unpopPin(meetPointMarker);
   openPopupId = null;
+}
+function pinEl(marker){
+  try{ const el = marker.getElement(); return el ? el.querySelector('.pin, .meet-pin') : null; }
+  catch(e){ return null; }
+}
+function popPin(marker){
+  const el = pinEl(marker); if(!el) return;
+  el.classList.remove('unpop'); void el.offsetWidth; el.classList.add('pop');
+}
+function unpopPin(marker){
+  const el = pinEl(marker); if(!el) return;
+  el.classList.remove('pop'); void el.offsetWidth; el.classList.add('unpop');
 }
 function openMarkerPopup(id){
   const mk = markers[id], p = places[id];
@@ -3284,6 +3339,10 @@ function openMarkerPopup(id){
     closeMarkerPopup();
     return;
   }
+  // 이전에 커져 있던 핀은 원래대로
+  if(openPopupId && markers[openPopupId]) unpopPin(markers[openPopupId]);
+  if(meetPointMarker) unpopPin(meetPointMarker);
+  popPin(mk);
   const isFinal = room.finalPlaceId === p.id;
   const iw = getInfoWindow();
   iw.setContent(placePopupContent(p, isFinal));
@@ -4165,7 +4224,16 @@ function proceedAfterOnboarding(){
   } else {
     showScreen('loginScreen');
     // 초대 링크로 온 미가입자에게 게스트 입장 경로 제공
-    if(deepLinkRoom){ $('guestJoinBox').classList.remove('hidden'); }
+    if(deepLinkRoom){
+      $('guestJoinBox').classList.remove('hidden');
+      try{
+        const savedNick = localStorage.getItem(LS_GUEST_NICK);
+        if(savedNick){
+          $('guestNickname').value = savedNick;
+          $('guestJoinBtn').textContent = `👋 ${savedNick}(으)로 다시 입장`;
+        }
+      }catch(e){}
+    }
   }
 }
 async function guestJoin(){
@@ -4174,11 +4242,23 @@ async function guestJoin(){
   if(!fbReady){ const ok = await loadFirebase(); if(!ok){ showToast('서버에 연결하지 못했어요'); return; } }
   $('guestJoinBtn').textContent = '입장 중...';
   try{
-    const cred = await signInAnonymously(auth);
-    const uid = cred.user.uid;
-    await set(ref(db, 'users/'+uid), { nickname:nick, provider:'guest', createdAt:Date.now() });
+    // 같은 기기에서 이미 만든 게스트 신분이 있으면 그대로 재사용 (중복 인원 방지)
+    let user = auth.currentUser;
+    const savedUid = getGuestUid();
+    if(!user || !user.isAnonymous || (savedUid && user.uid !== savedUid)){
+      if(!user || !user.isAnonymous){
+        const cred = await signInAnonymously(auth);
+        user = cred.user;
+      }
+    }
+    const uid = user.uid;
+    saveGuestUid(uid);
+    await update(ref(db, 'users/'+uid), { nickname:nick, provider:'guest', lastSeen:Date.now() });
     applySession(uid, nick);
-    try{ localStorage.setItem(LS_GUEST, deepLinkRoom || ''); }catch(e){}
+    try{
+      localStorage.setItem(LS_GUEST, deepLinkRoom || '');
+      localStorage.setItem(LS_GUEST_NICK, nick);
+    }catch(e){}
     isGuestMode = true;
     if(deepLinkRoom){
       showScreen('joinScreen');
@@ -4196,10 +4276,29 @@ async function guestJoin(){
 }
 async function reconcileSessionInBackground(){
   const authed = await ensureAuthReady();
-  if(!authed){
-    // 로컬엔 로그인 기록이 있는데 실제 Firebase 세션은 없음(다른 기기 데이터 지우기 등) → 다시 로그인 요청
-    if(myId){ showToast('로그인이 만료되었어요 · 다시 로그인해 주세요'); doLogout(); }
+  if(authed){
+    // 게스트라면 익명 신분이 유지되고 있는지 확인하고 uid를 최신으로 맞춰둠
+    if(isGuestMode && auth.currentUser && auth.currentUser.isAnonymous){
+      saveGuestUid(auth.currentUser.uid);
+      if(myId !== auth.currentUser.uid){
+        myId = auth.currentUser.uid;
+        saveSession(myId, myNickname);
+      }
+    }
+    return;
   }
+  // 게스트는 익명 세션이 끊겼을 뿐이므로 조용히 다시 만들어 이어붙임
+  if(isGuestMode){
+    try{
+      const cred = await signInAnonymously(auth);
+      saveGuestUid(cred.user.uid);
+      myId = cred.user.uid;
+      saveSession(myId, myNickname);
+      return;
+    }catch(e){ console.error(e); }
+  }
+  // 로컬엔 로그인 기록이 있는데 실제 Firebase 세션은 없음 → 다시 로그인 요청
+  if(myId){ showToast('로그인이 만료되었어요 · 다시 로그인해 주세요'); doLogout(); }
 }
 function afterAuthSuccess(){
   if(deepLinkRoom){
