@@ -492,7 +492,7 @@
   .locate-btn:active{ background:var(--accent-soft); }
 
   .map-controls{
-    position:absolute; right:12px; bottom:14px; z-index:9;
+    position:absolute; right:12px; bottom:96px; z-index:9;
     display:flex; flex-direction:column; gap:8px;
   }
   .member-legend{
@@ -502,6 +502,9 @@
   }
   .member-legend::-webkit-scrollbar{ display:none; }
   .member-legend:empty{ display:none; }
+  .map-wrap.panel-open .member-legend,
+  .map-wrap.panel-open .map-controls{ opacity:0; pointer-events:none; transition:opacity 0.2s; }
+  .map-controls, .member-legend{ transition:opacity 0.25s; }
   .ml-chip{
     flex:none; display:flex; align-items:center; gap:5px;
     background:var(--surface-strong); backdrop-filter:blur(var(--blur)); -webkit-backdrop-filter:blur(var(--blur));
@@ -522,7 +525,8 @@
   .search-bar:focus-within{ border-color:var(--accent); box-shadow:var(--shadow-lg); }
   .search-bar > svg{ flex-shrink:0; color:#9AA0AC; }
   .search-bar input{ flex:1; border:none; outline:none; background:transparent; font-family:inherit; font-size:0.88rem; color:var(--text); min-width:0; font-weight:500; transition:opacity 0.2s; }
-  .search-wrap.collapsed .search-bar{ width:46px; padding:11px; cursor:pointer; }
+  .search-wrap.collapsed .search-bar{ width:46px; height:46px; padding:0; cursor:pointer; justify-content:center; gap:0; }
+  .search-wrap.collapsed .search-bar > svg{ margin:0; }
   .search-wrap.collapsed .search-bar input,
   .search-wrap.collapsed .search-bar .search-clear{ opacity:0; pointer-events:none; }
   .search-wrap.collapsed .search-results{ display:none; }
@@ -544,6 +548,28 @@
   .pin span{ transform:rotate(45deg); color:#fff; font-size:13px; font-weight:700; }
   .temp-marker-dot{ width:22px; height:22px; border-radius:50%; background:rgba(91,91,214,0.22); border:3px solid #5B5BD6; box-sizing:border-box; }
   .my-loc-dot{ width:16px; height:16px; border-radius:50%; background:#2F80ED; border:3px solid #fff; box-shadow:0 1px 4px rgba(0,0,0,0.3); box-sizing:border-box; }
+  .red-dot{ position:absolute; top:-3px; right:-3px; width:10px; height:10px; border-radius:50%; background:var(--danger); border:2px solid var(--bg2); box-shadow:0 0 0 1px rgba(0,0,0,0.04); }
+  .notice-item{ display:flex; gap:11px; padding:13px 12px; border-radius:14px; margin-bottom:7px; background:var(--surface); border:1px solid var(--border); }
+  .notice-item.unread{ background:var(--accent-soft); border-color:var(--accent); }
+  .nt-icon{ font-size:1.1rem; flex:none; }
+  .nt-body{ flex:1; min-width:0; }
+  .nt-title{ font-size:0.87rem; font-weight:800; color:var(--text); margin-bottom:2px; }
+  .nt-text{ font-size:0.79rem; color:var(--text-soft); line-height:1.5; }
+  .nt-time{ font-size:0.7rem; color:var(--faint); margin-top:4px; }
+  .m-kick{ border:none; background:var(--line); color:var(--danger); font-size:0.72rem; font-weight:700; padding:5px 10px; border-radius:10px; font-family:inherit; cursor:pointer; }
+  .m-kick:active{ background:var(--danger); color:#fff; }
+  .msg-preview{ margin:4px 0 14px; padding:12px 14px; border-radius:14px; background:var(--line); font-size:0.84rem; color:var(--text-soft); line-height:1.5; word-break:break-all; }
+  .react-picker{ display:flex; justify-content:space-around; gap:6px; padding:6px 0 14px; border-bottom:1px solid var(--border); margin-bottom:10px; }
+  .react-picker button{ width:48px; height:48px; border-radius:50%; border:none; background:var(--line); font-size:1.35rem; cursor:pointer; transition:transform 0.14s; }
+  .react-picker button:active{ transform:scale(0.86); background:var(--accent-soft); }
+  .action-item{ display:flex; align-items:center; gap:12px; width:100%; padding:14px 12px; border:none; background:transparent; font-family:inherit; font-size:0.9rem; font-weight:600; color:var(--text); text-align:left; border-radius:12px; cursor:pointer; }
+  .action-item{ transition:background 0.15s, transform 0.1s; }
+  .action-item:active{ background:var(--line); transform:scale(0.985); }
+  .action-item.danger{ color:var(--danger); }
+  .action-item span{ font-size:1.05rem; }
+  .chat-reacts{ display:flex; gap:4px; margin-top:3px; flex-wrap:wrap; }
+  .chat-react{ font-size:0.7rem; font-weight:700; padding:2px 7px; border-radius:9px; background:var(--line); color:var(--text-soft); cursor:pointer; }
+  .chat-react.on{ background:var(--accent-soft); color:var(--accent); }
   .mp-spinner{ width:34px; height:34px; margin:0 auto; border:3px solid var(--line); border-top-color:var(--accent); border-radius:50%; animation:mpSpin 0.8s linear infinite; }
   @keyframes mpSpin{ to{ transform:rotate(360deg);} }
   .mp-card{ position:relative; border-radius:20px; padding:18px 16px 16px; background:linear-gradient(150deg,var(--accent-soft),var(--line)); border:1.5px solid var(--accent); margin-top:6px; }
@@ -623,7 +649,7 @@
   .sheet h3{ margin:0 0 4px; font-size:1.12rem; font-weight:800; }
   .sheet .sub{ font-size:0.8rem; color:var(--text-soft); margin:0 0 16px; }
   .sheet-actions{ display:flex; gap:10px; margin-top:8px; }
-  .btn{ flex:1; border:none; border-radius:14px; padding:14px; font-size:0.92rem; font-weight:700; transition:transform 0.12s; }
+  .btn{ flex:1; border:none; border-radius:14px; padding:14px; font-size:0.92rem; font-weight:700; transition:transform 0.12s ease, opacity 0.15s, background 0.15s; }
   .btn:active{ transform:scale(0.97); }
   .btn-cancel{ background:var(--bg); color:var(--text-soft); }
   .btn-save{ background:linear-gradient(135deg,var(--accent),var(--accent-2)); color:#fff; box-shadow:0 6px 16px rgba(91,91,214,0.32); }
@@ -864,13 +890,15 @@
         <p class="home-eyebrow" id="homeGreeting">📍 어디가지?</p>
         <h1 class="home-title">내 모임</h1>
       </div>
-      <button class="icon-btn" id="menuBtn" title="메뉴" style="width:44px; height:44px; border-radius:14px; background:var(--surface); backdrop-filter:blur(var(--blur)); border:1px solid var(--border); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;">
+      <button class="icon-btn" id="menuBtn" title="메뉴" style="position:relative;" style="width:44px; height:44px; border-radius:14px; background:var(--surface); backdrop-filter:blur(var(--blur)); border:1px solid var(--border); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;">
         <span style="width:18px; height:2px; border-radius:2px; background:var(--text);"></span>
         <span style="width:18px; height:2px; border-radius:2px; background:var(--text);"></span>
         <span style="width:18px; height:2px; border-radius:2px; background:var(--text);"></span>
+        <span class="red-dot hidden" id="menuBtnDot"></span>
       </button>
     </div>
     <div class="home-list" id="roomListBox"></div>
+    <span class="red-dot hidden" id="homeDot" style="display:none;"></span>
     <div class="home-footer">
       <button class="home-btn outline" id="homeJoin">코드로 입장</button>
       <button class="home-btn solid" id="homeCreate">+ 새 방 만들기</button>
@@ -1005,10 +1033,8 @@
   <div class="map-wrap">
     <div id="map"></div>
     <div class="map-controls">
-      <button class="locate-btn" id="zoomInBtn" title="확대">＋</button>
-      <button class="locate-btn" id="zoomOutBtn" title="축소">－</button>
-      <button class="locate-btn" id="locateMapBtn" title="현재 위치">📍</button>
       <button class="locate-btn" id="shareLocBtn" title="내 위치 실시간 공유">📡</button>
+      <button class="locate-btn" id="locateMapBtn" title="현재 위치">📍</button>
     </div>
     <div class="member-legend" id="memberLegend"></div>
     <div class="search-wrap collapsed" id="searchWrap">
@@ -1170,6 +1196,7 @@
     <div style="display:flex; align-items:center; justify-content:center; gap:18px; margin-top:14px;">
       <button class="mini-link confirm hidden" id="detailEditBtn">✏️ 메모 수정</button>
       <button class="mini-link del hidden" id="detailDeleteBtn">이 후보 삭제</button>
+      <button class="mini-link del hidden" id="detailReportBtn">🚩 신고</button>
     </div>
   </div>
 </div>
@@ -1203,6 +1230,21 @@
         </div>
         <label class="switch"><input type="checkbox" id="notifySwitch"><span class="slider"></span></label>
       </div>
+      <button class="drawer-item" id="menuNoticeBtn">
+        <span class="dr-icon">🔔</span>
+        <span class="dr-label" style="flex:1; text-align:left;">알림함 <span id="menuNoticeCount" style="color:var(--accent); font-weight:700;"></span></span>
+        <span style="color:var(--faint);">›</span>
+      </button>
+      <button class="drawer-item" id="menuAnnounceBtn">
+        <span class="dr-icon">📢</span>
+        <span class="dr-label" style="flex:1; text-align:left;">공지사항</span>
+        <span style="color:var(--faint);">›</span>
+      </button>
+      <button class="drawer-item" id="menuBlockedBtn">
+        <span class="dr-icon">🚫</span>
+        <span class="dr-label" style="flex:1; text-align:left;">차단한 사용자 <span id="menuBlockedCount" style="color:var(--faint); font-weight:500;"></span></span>
+        <span style="color:var(--faint);">›</span>
+      </button>
       <button class="drawer-item" id="menuPastBtn">
         <span class="dr-icon">📚</span>
         <span class="dr-label" style="flex:1; text-align:left;">지난 모임 <span id="menuPastCount" style="color:var(--faint); font-weight:500;"></span></span>
@@ -1298,6 +1340,71 @@
 </div>
 
 <!-- ============ 위치 공유 동의 ============ -->
+<div class="overlay" id="noticeOverlay">
+  <div class="sheet">
+    <div class="sheet-grip"></div>
+    <h3>🔔 알림함</h3>
+    <p class="sub">받은 소식을 모아뒀어요</p>
+    <div id="noticeListBox" style="max-height:56vh; overflow-y:auto;"></div>
+    <button class="btn btn-cancel" id="noticeClose" style="width:100%; margin-top:12px;">닫기</button>
+  </div>
+</div>
+
+<div class="overlay" id="announceOverlay">
+  <div class="sheet">
+    <div class="sheet-grip"></div>
+    <h3>📢 공지사항</h3>
+    <p class="sub">어디가지? 소식과 안내</p>
+    <div id="announceListBox" style="max-height:56vh; overflow-y:auto;"></div>
+    <button class="btn btn-cancel" id="announceClose" style="width:100%; margin-top:12px;">닫기</button>
+  </div>
+</div>
+
+<div class="overlay" id="blockedOverlay">
+  <div class="sheet">
+    <div class="sheet-grip"></div>
+    <h3>🚫 차단한 사용자</h3>
+    <p class="sub">차단을 해제하면 다시 글이 보여요</p>
+    <div id="blockedListBox" style="max-height:50vh; overflow-y:auto;"></div>
+    <button class="btn btn-cancel" id="blockedClose" style="width:100%; margin-top:12px;">닫기</button>
+  </div>
+</div>
+
+<div class="overlay" id="msgActionOverlay">
+  <div class="sheet">
+    <div class="sheet-grip"></div>
+    <p class="msg-preview" id="msgActionPreview"></p>
+    <div class="react-picker" id="reactPicker">
+      <button data-emo="👍">👍</button>
+      <button data-emo="❤️">❤️</button>
+      <button data-emo="😂">😂</button>
+      <button data-emo="😮">😮</button>
+      <button data-emo="😢">😢</button>
+    </div>
+    <button class="action-item" id="msgCopyBtn"><span>📋</span>복사하기</button>
+    <button class="action-item danger hidden" id="msgDeleteBtn"><span>🗑️</span>삭제하기</button>
+    <button class="action-item danger hidden" id="msgReportBtn"><span>🚩</span>신고하기</button>
+    <button class="action-item danger hidden" id="msgBlockBtn"><span>🚫</span>이 사용자 차단</button>
+    <button class="btn btn-cancel" id="msgActionCancel" style="width:100%; margin-top:10px;">닫기</button>
+  </div>
+</div>
+
+<div class="overlay" id="reportOverlay">
+  <div class="sheet">
+    <div class="sheet-grip"></div>
+    <h3>🚩 신고하기</h3>
+    <p class="sub">신고 사유를 선택해 주세요</p>
+    <p class="msg-preview" id="reportTargetText"></p>
+    <button class="action-item" data-reason="스팸/광고"><span>📢</span>스팸 또는 광고</button>
+    <button class="action-item" data-reason="욕설/괴롭힘"><span>😡</span>욕설 또는 괴롭힘</button>
+    <button class="action-item" data-reason="음란물"><span>🔞</span>부적절한 성적 콘텐츠</button>
+    <button class="action-item" data-reason="폭력/위험"><span>⚠️</span>폭력적이거나 위험한 내용</button>
+    <button class="action-item" data-reason="개인정보 노출"><span>🔐</span>개인정보 노출</button>
+    <button class="action-item" data-reason="기타"><span>💬</span>기타</button>
+    <button class="btn btn-cancel" id="reportCancel" style="width:100%; margin-top:10px;">취소</button>
+  </div>
+</div>
+
 <div class="overlay" id="midpointOverlay">
   <div class="sheet">
     <div class="sheet-grip"></div>
@@ -1491,6 +1598,25 @@ function toggleTheme(){ applyTheme(getTheme()==='dark' ? 'light' : 'dark'); }
 function idToEmail(id){ return safeKey(id).toLowerCase() + '@eodigaji.app'; }
 function isEmailFormat(s){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s); }
 
+const LS_GUEST = 'bijeong-guest-room-v1';
+let isGuestMode = false;
+function guestRoom(){ try{ return localStorage.getItem(LS_GUEST); }catch(e){ return null; } }
+function checkGuestMode(){
+  const g = guestRoom();
+  isGuestMode = (g !== null && g !== undefined);
+  return isGuestMode;
+}
+// 게스트가 제한된 기능을 시도하면 로그인 유도
+function requireAccount(what){
+  if(!isGuestMode) return true;
+  if(confirm(`${what}은(는) 로그인 후 이용할 수 있어요.\n지금 회원가입하시겠어요?`)){
+    try{ localStorage.removeItem(LS_GUEST); }catch(e){}
+    isGuestMode = false;
+    doLogout();
+    showScreen('signupScreen');
+  }
+  return false;
+}
 function loadSession(){
   try{ return JSON.parse(localStorage.getItem(LS_SESSION) || 'null'); }catch(e){ return null; }
 }
@@ -1568,9 +1694,12 @@ async function requestPasswordReset(idOrEmail){
 function applySession(id, nickname){
   myId = id; myNickname = nickname;
   saveSession(id, nickname);
+  setTimeout(()=>{ try{ subscribeNotices(); }catch(e){} }, 800);
 }
 function doLogout(){
   clearSession();
+  try{ localStorage.removeItem(LS_GUEST); }catch(e){}
+  isGuestMode = false;
   myId=''; myNickname='';
   closeAccountMenu();
   try{ if(fbReady) signOut(auth); }catch(e){}
@@ -1632,7 +1761,7 @@ function showScreen(idOrNull){
 
 /* ================= 뒤로가기(안드로이드/브라우저) 처리 ================= */
 let currentScreen = null;
-const OPEN_SHEET_IDS = ['addOverlay','settingsOverlay','shareOverlay','membersOverlay','detailOverlay','nicknameOverlay','feedbackOverlay','weatherOverlay','chatOverlay','locShareOverlay','pastOverlay','midpointOverlay','menuOverlay'];
+const OPEN_SHEET_IDS = ['addOverlay','settingsOverlay','shareOverlay','membersOverlay','detailOverlay','nicknameOverlay','feedbackOverlay','weatherOverlay','chatOverlay','locShareOverlay','pastOverlay','midpointOverlay','msgActionOverlay','reportOverlay','blockedOverlay','noticeOverlay','announceOverlay','menuOverlay'];
 function anyOpenSheet(){
   return OPEN_SHEET_IDS.find(id=>{ const el=$(id); return el && el.classList.contains('show'); }) || null;
 }
@@ -1882,8 +2011,8 @@ async function quickEnter(code){
 }
 
 /* ================= lobby nav ================= */
-$('homeCreate').addEventListener('click', ()=>{ pickedEmoji = DEFAULT_ROOM_EMOJI; renderEmojiGrid(); showScreen('createScreen'); });
-$('homeJoin').addEventListener('click', ()=> showScreen('joinScreen'));
+$('homeCreate').addEventListener('click', ()=>{ if(!requireAccount('새 모임 만들기')) return; pickedEmoji = DEFAULT_ROOM_EMOJI; renderEmojiGrid(); showScreen('createScreen'); });
+$('homeJoin').addEventListener('click', ()=>{ if(!requireAccount('다른 모임 참여')) return; showScreen('joinScreen'); });
 document.querySelectorAll('[data-back]').forEach(b=> b.addEventListener('click', ()=> goHomeOrLobby()));
 document.querySelectorAll('[data-back-login]').forEach(b=> b.addEventListener('click', ()=> showScreen('loginScreen')));
 
@@ -1949,15 +2078,30 @@ function onEmojiInput(){
 
 /* ================= create room ================= */
 $('emojiInput').addEventListener('input', onEmojiInput);
+async function genUniqueCode(){
+  // 현재 존재하는 방과 절대 겹치지 않는 코드를 찾을 때까지 재시도
+  for(let i=0; i<20; i++){
+    const code = genCode();
+    try{
+      const snap = await get(child(ref(db), 'rooms/'+code));
+      if(!snap.exists()) return code;
+    }catch(e){
+      // 조회 실패 시엔 확인이 불가하므로 그대로 사용하지 않고 재시도
+      if(i > 3) return code;
+    }
+  }
+  // 극히 드문 경우: 뒤에 타임스탬프 조각을 붙여 충돌 확률을 사실상 0으로
+  return genCode().slice(0,4) + Date.now().toString(36).slice(-2).toUpperCase();
+}
 $('createBtn').addEventListener('click', async ()=>{
   const rn = $('newRoomName').value.trim();
   if(!rn){ $('createErr').style.display='block'; return; }
   $('createErr').style.display='none';
   const authed = await ensureAuthReady();
   if(!authed){ $('createErr').textContent='로그인이 필요해요 · 다시 로그인해 주세요'; $('createErr').style.display='block'; doLogout(); return; }
-  let code = genCode();
-  // avoid collision
-  try{ const snap = await get(child(ref(db), 'rooms/'+code)); if(snap.exists()) code = genCode(); }catch(e){}
+  $('createBtn').textContent = '만드는 중...';
+  const code = await genUniqueCode();
+  $('createBtn').textContent = '모임 만들기 →';
   const roomObj = {
     name: rn, code, emoji: pickedEmoji, hostId: myId, hostNickname: myNickname, createdAt: Date.now(),
     meetAt: null, allowAdd: true, allowVote: true, finalPlaceId: null,
@@ -2095,13 +2239,29 @@ function openMembers(){
   const members = room.members ? Object.values(room.members) : [];
   members.sort((a,b)=> (a.joinedAt||0) - (b.joinedAt||0));
   $('membersSub').textContent = members.length + '명이 참여 중이에요';
+  const host = isHost();
   $('membersList').innerHTML = members.map(m=>`
     <div class="member-row">
       <div class="avatar" style="background:${colorForName(m.id||m.nickname)}; width:32px; height:32px; font-size:0.8rem;">${initials(m.nickname)}</div>
       <div class="m-name">${escapeHtml(m.nickname)} ${m.id===myId ? '<span class="m-me">(나)</span>' : ''}</div>
       ${m.host ? '<span class="m-badge">방장</span>' : ''}
+      ${(host && !m.host && m.id!==myId) ? `<button class="m-kick" data-kick="${escapeHtml(m.id)}" data-nick="${escapeHtml(m.nickname)}">내보내기</button>` : ''}
     </div>`).join('') || '<div class="empty">참여자 정보가 없어요</div>';
+  $('membersList').querySelectorAll('[data-kick]').forEach(btn=>{
+    btn.addEventListener('click', ()=> kickMember(btn.dataset.kick, btn.dataset.nick));
+  });
   $('membersOverlay').classList.add('show');
+}
+async function kickMember(uid, nick){
+  if(!isHost()) return;
+  if(!confirm(`${nick}님을 이 모임에서 내보낼까요?\n내보내면 이 방에 다시 들어오려면 코드가 필요해요.`)) return;
+  try{
+    await remove(ref(db, 'rooms/'+roomCode+'/members/'+safeKey(uid)));
+    // 내보내진 사람에게 알림 남기기
+    await pushNotice(uid, '방출됨', `'${room.name}' 모임에서 내보내졌어요`);
+    showToast(`${nick}님을 내보냈어요`);
+    openMembers();
+  }catch(e){ console.error(e); showToast('내보내지 못했어요 · 인터넷을 확인해 주세요'); }
 }
 
 /* ================= place detail sheet ================= */
@@ -2165,6 +2325,7 @@ function renderDetail(){
   const canEdit = (myId===p.authorId || isHost());
   $('detailEditBtn').classList.toggle('hidden', !canEdit);
   $('detailDeleteBtn').classList.toggle('hidden', !canEdit);
+  $('detailReportBtn').classList.toggle('hidden', myId===p.authorId);
 }
 function openDetail(id){
   detailPlaceId = id;
@@ -2184,6 +2345,8 @@ async function openAccountMenu(){
   $('menuThemeLabel').textContent = getTheme()==='dark' ? '다크 모드' : '라이트 모드';
   const pastCnt = getMyRooms().filter(isPastMeetup).length;
   $('menuPastCount').textContent = pastCnt ? '('+pastCnt+')' : '';
+  const blkCnt = getBlocked().length;
+  $('menuBlockedCount').textContent = blkCnt ? '('+blkCnt+')' : '';
   refreshNotifyUI();
   $('menuOverlay').classList.add('show');
   try{
@@ -2377,25 +2540,45 @@ function subscribeChat(){
   unsubMessages = onValue(mRef, (snap)=>{
     const val = snap.val() || {};
     const list = Object.values(val).sort((a,b)=> a.ts-b.ts);
-    const isNew = list.length > chatMessages.length;
-    const lastMsg = list[list.length-1];
+    const prevLen = chatMessages.length;
     chatMessages = list;
-    if(chatOpen){ renderChat(); }
-    else if(isNew && lastMsg && lastMsg.authorId !== myId){
-      chatUnread++; updateChatBadge();
+    if(chatOpen){ renderChat(); markChatRead(); }
+    updateChatBadge();
+    // 새 메시지 알림 (남이 보낸 것만)
+    const lastMsg = list[list.length-1];
+    if(!chatOpen && list.length > prevLen && lastMsg && lastMsg.authorId !== myId && !isBlocked(lastMsg.authorId)){
+      notifyUser('새 메시지', `${lastMsg.author}: ${lastMsg.text.slice(0,40)}`);
     }
   });
 }
+// 내가 아직 안 읽은 메시지 수 (readBy에 내가 없는, 남이 보낸 메시지)
+function computeUnread(){
+  return chatMessages.filter(m=>
+    m.authorId !== myId && !isBlocked(m.authorId) && !((m.readBy||{})[safeKey(myId)])
+  ).length;
+}
 function updateChatBadge(){
+  chatUnread = computeUnread();
   const b = $('chatBadge');
   if(chatUnread > 0){ b.textContent = chatUnread > 9 ? '9+' : chatUnread; b.classList.remove('hidden'); }
   else{ b.classList.add('hidden'); }
 }
+// 화면에 보이는 남의 메시지를 읽음 처리
+function markChatRead(){
+  if(!roomCode || !myId) return;
+  const key = safeKey(myId);
+  chatMessages.forEach(m=>{
+    if(m.authorId !== myId && !((m.readBy||{})[key])){
+      set(ref(db,'rooms/'+roomCode+'/messages/'+m.id+'/readBy/'+key), true).catch(()=>{});
+    }
+  });
+}
 function openChat(){
   chatOpen = true;
-  chatUnread = 0; updateChatBadge();
-  $('chatSub').textContent = room ? `${room.name || '방'} 멤버들과 대화해` : '';
+  $('chatSub').textContent = room ? `${room.name || '방'} 멤버들과 대화해 보세요` : '';
   renderChat();
+  markChatRead();
+  updateChatBadge();
   $('chatOverlay').classList.add('show');
   setTimeout(()=> $('chatInput').focus(), 300);
 }
@@ -2405,23 +2588,229 @@ function closeChat(){
 }
 function renderChat(){
   const box = $('chatList');
-  if(chatMessages.length === 0){
-    box.innerHTML = `<div class="chat-empty">아직 메시지가 없어요<br>첫 인사를 남겨봐 👋</div>`;
+  const visible = chatMessages.filter(m=> !isBlocked(m.authorId));
+  if(visible.length === 0){
+    box.innerHTML = `<div class="chat-empty">아직 메시지가 없어요<br>첫 인사를 남겨보세요 👋</div>`;
     return;
   }
   const nearBottom = (box.scrollHeight - box.scrollTop - box.clientHeight) < 120;
-  box.innerHTML = chatMessages.map(m=>{
+  box.innerHTML = visible.map(m=>{
     const mine = m.authorId === myId;
     const time = new Date(m.ts).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});
+    const reacts = m.reactions || {};
+    const counts = {};
+    Object.values(reacts).forEach(e=>{ counts[e] = (counts[e]||0)+1; });
+    const myReact = reacts[safeKey(myId)];
+    const chips = Object.entries(counts).map(([emo,n])=>
+      `<span class="chat-react ${myReact===emo?'on':''}" data-react-msg="${m.id}" data-emo="${emo}">${emo} ${n}</span>`
+    ).join('');
     return `
-      <div class="chat-bubble-row ${mine?'mine':'theirs'}">
+      <div class="chat-bubble-row ${mine?'mine':'theirs'}" data-msg="${m.id}">
         ${!mine ? `<div class="chat-author">${escapeHtml(m.author)}</div>` : ''}
-        <div class="chat-bubble">${escapeHtml(m.text)}</div>
-        <div class="chat-time">${time}</div>
+        <div class="chat-bubble" data-longpress="${m.id}">${escapeHtml(m.text)}</div>
+        ${chips ? `<div class="chat-reacts">${chips}</div>` : ''}
+        <div class="chat-time">${mine ? readStatusText(m)+' · ' : ''}${time}</div>
       </div>`;
   }).join('');
-  if(nearBottom || chatMessages.length <= 20) box.scrollTop = box.scrollHeight;
+
+  // 공감 칩 토글
+  box.querySelectorAll('[data-react-msg]').forEach(el=>{
+    el.addEventListener('click', (e)=>{ e.stopPropagation(); toggleReaction(el.dataset.reactMsg, el.dataset.emo); });
+  });
+  // 말풍선 길게 누르기 → 액션 메뉴
+  box.querySelectorAll('[data-longpress]').forEach(el=>{
+    attachLongPress(el, ()=> openMsgActions(el.dataset.longpress));
+  });
+
+  if(nearBottom || visible.length <= 20) box.scrollTop = box.scrollHeight;
 }
+
+// 내 메시지의 읽음 상태: 나 말고 방 인원 중 몇 명이 읽었는지
+function readStatusText(m){
+  const total = room && room.members ? Object.keys(room.members).length : 1;
+  const others = Math.max(0, total - 1);
+  const readCnt = Object.keys(m.readBy || {}).filter(k=> k !== safeKey(myId)).length;
+  if(others === 0) return '보냄';
+  if(readCnt === 0) return '보냄';
+  if(readCnt >= others) return '읽음';
+  return `${others - readCnt}명 안 읽음`;
+}
+
+/* 길게 누르기 헬퍼 (터치/마우스 공용) */
+function attachLongPress(el, cb){
+  let timer=null, moved=false;
+  const start = ()=>{ moved=false; timer=setTimeout(()=>{ if(!moved){ haptic(18); cb(); } }, 480); };
+  const cancel = ()=>{ clearTimeout(timer); };
+  el.addEventListener('touchstart', start, {passive:true});
+  el.addEventListener('touchmove', ()=>{ moved=true; cancel(); }, {passive:true});
+  el.addEventListener('touchend', cancel);
+  el.addEventListener('touchcancel', cancel);
+  el.addEventListener('mousedown', start);
+  el.addEventListener('mouseup', cancel);
+  el.addEventListener('mouseleave', cancel);
+  el.addEventListener('contextmenu', (e)=> e.preventDefault());
+}
+
+function toggleReaction(msgId, emo){
+  const m = chatMessages.find(x=> x.id===msgId);
+  if(!m) return;
+  const key = safeKey(myId);
+  const path = 'rooms/'+roomCode+'/messages/'+msgId+'/reactions/'+key;
+  const cur = (m.reactions||{})[key];
+  haptic(8);
+  if(cur === emo) remove(ref(db, path));
+  else set(ref(db, path), emo);
+}
+
+/* 메시지 액션 시트 (공감 / 삭제 / 신고 / 차단) */
+let actionMsgId = null;
+function openMsgActions(msgId){
+  const m = chatMessages.find(x=> x.id===msgId);
+  if(!m) return;
+  actionMsgId = msgId;
+  const mine = m.authorId === myId;
+  $('msgActionPreview').textContent = m.text.length > 60 ? m.text.slice(0,60)+'…' : m.text;
+  $('msgDeleteBtn').classList.toggle('hidden', !(mine || isHost()));
+  $('msgReportBtn').classList.toggle('hidden', mine);
+  $('msgBlockBtn').classList.toggle('hidden', mine);
+  $('msgActionOverlay').classList.add('show');
+}
+function closeMsgActions(){ $('msgActionOverlay').classList.remove('show'); actionMsgId=null; }
+/* ================= 알림함 ================= */
+async function pushNotice(uid, title, body, kind){
+  if(!uid) return;
+  const id = 'nt_'+Date.now()+'_'+Math.floor(Math.random()*1000);
+  try{
+    await set(ref(db, 'notices/'+safeKey(uid)+'/'+id), {
+      id, title, body, kind: kind||'info', ts: Date.now(), read: false
+    });
+  }catch(e){ console.error('알림 저장 실패', e); }
+}
+let myNotices = [];
+let unsubNotices = null;
+function subscribeNotices(){
+  if(!myId || !fbReady) return;
+  if(unsubNotices) unsubNotices();
+  const nRef = ref(db, 'notices/'+safeKey(myId));
+  unsubNotices = onValue(nRef, (snap)=>{
+    const val = snap.val() || {};
+    myNotices = Object.values(val).sort((a,b)=> b.ts - a.ts);
+    updateNoticeBadge();
+  });
+}
+function unreadNoticeCount(){ return myNotices.filter(n=> !n.read).length; }
+function updateNoticeBadge(){
+  const n = unreadNoticeCount();
+  const dot = $('homeDot');
+  if(dot) dot.classList.toggle('hidden', n === 0);
+  const cnt = $('menuNoticeCount');
+  if(cnt) cnt.textContent = n ? '('+n+')' : '';
+  const mdot = $('menuBtnDot');
+  if(mdot) mdot.classList.toggle('hidden', n === 0);
+}
+function renderNotices(){
+  const box = $('noticeListBox');
+  if(myNotices.length === 0){
+    box.innerHTML = '<div class="empty" style="padding:30px 10px;"><span class="big">🔔</span>받은 알림이 없어요</div>';
+    return;
+  }
+  box.innerHTML = myNotices.map(n=>`
+    <div class="notice-item ${n.read?'':'unread'}">
+      <span class="nt-icon">${n.kind==='kick'?'🚪':n.kind==='dday'?'⏰':n.kind==='update'?'✨':'🔔'}</span>
+      <div class="nt-body">
+        <div class="nt-title">${escapeHtml(n.title)}</div>
+        <div class="nt-text">${escapeHtml(n.body)}</div>
+        <div class="nt-time">${timeAgo(n.ts)}</div>
+      </div>
+    </div>`).join('');
+}
+async function markNoticesRead(){
+  const unread = myNotices.filter(n=> !n.read);
+  for(const n of unread){
+    try{ await update(ref(db, 'notices/'+safeKey(myId)+'/'+n.id), { read:true }); }catch(e){}
+  }
+}
+
+/* ================= 차단 · 신고 ================= */
+function renderBlockedList(){
+  const box = $('blockedListBox');
+  const list = getBlocked();
+  if(list.length === 0){
+    box.innerHTML = '<div class="empty" style="padding:26px 10px;"><span class="big">🙂</span>차단한 사용자가 없어요</div>';
+    return;
+  }
+  box.innerHTML = list.map(uid=>
+    `<div class="mp-alt"><span class="mp-alt-name">${escapeHtml(uid)}</span><button class="mini-link confirm" data-unblock="${escapeHtml(uid)}">차단 해제</button></div>`
+  ).join('');
+  box.querySelectorAll('[data-unblock]').forEach(b=>{
+    b.addEventListener('click', ()=>{ unblockUser(b.dataset.unblock); showToast('차단을 해제했어요'); renderBlockedList(); });
+  });
+}
+const LS_BLOCKED = 'bijeong-blocked-v1';
+function getBlocked(){
+  try{ return JSON.parse(localStorage.getItem(LS_BLOCKED) || '[]'); }catch(e){ return []; }
+}
+function isBlocked(userId){
+  if(!userId || userId === myId) return false;
+  return getBlocked().includes(userId);
+}
+function blockUser(userId, nickname){
+  if(!userId || userId === myId) return;
+  const list = getBlocked();
+  if(!list.includes(userId)){
+    list.push(userId);
+    try{ localStorage.setItem(LS_BLOCKED, JSON.stringify(list)); }catch(e){}
+  }
+  showToast(`${nickname||'이 사용자'}님을 차단했어요 · 이제 이 사람의 글이 보이지 않아요`);
+  renderChat();
+  if(room) renderList();
+}
+function unblockUser(userId){
+  const list = getBlocked().filter(x=> x !== userId);
+  try{ localStorage.setItem(LS_BLOCKED, JSON.stringify(list)); }catch(e){}
+  renderChat();
+  if(room) renderList();
+}
+async function submitReport(kind, targetId, targetAuthorId, content, reason){
+  const id = 'rep_'+Date.now()+'_'+Math.floor(Math.random()*1000);
+  try{
+    await set(ref(db, 'reports/'+id), {
+      kind, roomCode: roomCode||'', targetId: targetId||'',
+      targetAuthorId: targetAuthorId||'', content: (content||'').slice(0,500),
+      reason, reporterId: myId, reporterNickname: myNickname, ts: Date.now()
+    });
+    return true;
+  }catch(e){ console.error(e); return false; }
+}
+/* 신고 사유 선택 시트 */
+let reportCtx = null;
+function openReportSheet(ctx){
+  reportCtx = ctx; // {kind, targetId, targetAuthorId, targetNickname, content}
+  $('reportTargetText').textContent = ctx.content
+    ? (ctx.content.length>60 ? ctx.content.slice(0,60)+'…' : ctx.content)
+    : (ctx.targetNickname || '');
+  $('reportOverlay').classList.add('show');
+}
+async function doReport(reason){
+  if(!reportCtx) return;
+  const ok = await submitReport(reportCtx.kind, reportCtx.targetId, reportCtx.targetAuthorId, reportCtx.content, reason);
+  $('reportOverlay').classList.remove('show');
+  if(ok){
+    showToast('신고가 접수되었어요 · 검토 후 조치할게요');
+    // 신고 후 차단도 함께 제안
+    if(reportCtx.targetAuthorId && reportCtx.targetAuthorId !== myId){
+      setTimeout(()=>{
+        if(confirm(`${reportCtx.targetNickname||'이 사용자'}님을 차단할까요?\n차단하면 이 사람의 메시지와 후보가 보이지 않아요.`)){
+          blockUser(reportCtx.targetAuthorId, reportCtx.targetNickname);
+        }
+        reportCtx = null;
+      }, 600);
+    } else { reportCtx = null; }
+  } else {
+    showToast('신고를 접수하지 못했어요 · 인터넷을 확인해 주세요');
+  }
+}
+
 async function sendChatMessage(){
   const input = $('chatInput');
   const text = input.value.trim();
@@ -2854,7 +3243,7 @@ function has(obj, me){ return !!(obj && obj[me]); }
 /* ================= list ================= */
 function renderList(){
   const listEl = $('placeList');
-  const arr = Object.values(places);
+  const arr = Object.values(places).filter(p=> !isBlocked(p.authorId));
   $('countLabel').textContent = arr.length + '곳';
   if(arr.length === 0){
     listEl.innerHTML = `<div class="empty"><span class="big">🗺️</span>아직 후보가 없어요<br>지도를 탭하거나 검색해서 첫 장소를 올려 보세요</div>`;
@@ -3396,6 +3785,12 @@ $('detailConfirmBtn').addEventListener('click', ()=>{
   handleAction(isFinal ? 'unconfirm' : 'confirm', detailPlaceId);
 });
 $('detailDeleteBtn').addEventListener('click', ()=>{ if(!detailPlaceId) return; handleAction('del', detailPlaceId); closeDetail(); });
+$('detailReportBtn').addEventListener('click', ()=>{
+  const p = places[detailPlaceId];
+  if(!p) return;
+  closeDetail();
+  openReportSheet({ kind:'place', targetId:p.id, targetAuthorId:p.authorId, targetNickname:p.author, content:p.name + (p.memo? ' / '+p.memo : '') });
+});
 $('detailEditBtn').addEventListener('click', ()=>{
   if(!detailPlaceId) return;
   const p = places[detailPlaceId];
@@ -3409,12 +3804,51 @@ $('detailEditBtn').addEventListener('click', ()=>{
 $('settingsCancel').addEventListener('click', closeSettings);
 $('settingsSave').addEventListener('click', saveSettings);
 $('midpointBtn').addEventListener('click', findMidpoint);
+
+/* --- 메시지 액션 시트 --- */
+$('msgActionCancel').addEventListener('click', closeMsgActions);
+$('msgActionOverlay').addEventListener('click', (e)=>{ if(e.target.id==='msgActionOverlay') closeMsgActions(); });
+$('reactPicker').querySelectorAll('button').forEach(b=>{
+  b.addEventListener('click', ()=>{ if(actionMsgId){ toggleReaction(actionMsgId, b.dataset.emo); closeMsgActions(); } });
+});
+$('msgCopyBtn').addEventListener('click', ()=>{
+  const m = chatMessages.find(x=> x.id===actionMsgId);
+  if(m) copyText(m.text);
+  closeMsgActions();
+});
+$('msgDeleteBtn').addEventListener('click', ()=>{
+  if(!actionMsgId) return;
+  if(!confirm('이 메시지를 삭제할까요?')) return;
+  remove(ref(db,'rooms/'+roomCode+'/messages/'+actionMsgId))
+    .then(()=> showToast('메시지를 삭제했어요'))
+    .catch(()=> showToast('삭제하지 못했어요'));
+  closeMsgActions();
+});
+$('msgReportBtn').addEventListener('click', ()=>{
+  const m = chatMessages.find(x=> x.id===actionMsgId);
+  if(!m) return;
+  closeMsgActions();
+  openReportSheet({ kind:'message', targetId:m.id, targetAuthorId:m.authorId, targetNickname:m.author, content:m.text });
+});
+$('msgBlockBtn').addEventListener('click', ()=>{
+  const m = chatMessages.find(x=> x.id===actionMsgId);
+  if(!m) return;
+  closeMsgActions();
+  if(confirm(`${m.author}님을 차단할까요?\n차단하면 이 사람의 메시지와 후보가 보이지 않아요.`)){
+    blockUser(m.authorId, m.author);
+  }
+});
+
+/* --- 신고 시트 --- */
+$('reportCancel').addEventListener('click', ()=>{ $('reportOverlay').classList.remove('show'); reportCtx=null; });
+$('reportOverlay').addEventListener('click', (e)=>{ if(e.target.id==='reportOverlay'){ $('reportOverlay').classList.remove('show'); reportCtx=null; } });
+$('reportOverlay').querySelectorAll('[data-reason]').forEach(b=>{
+  b.addEventListener('click', ()=> doReport(b.dataset.reason));
+});
 $('mpSetBtn').addEventListener('click', setMeetingPoint);
 $('mpCancelBtn').addEventListener('click', ()=> $('midpointOverlay').classList.remove('show'));
 $('mpEmptyClose').addEventListener('click', ()=> $('midpointOverlay').classList.remove('show'));
 $('midpointOverlay').addEventListener('click', (e)=>{ if(e.target.id==='midpointOverlay') $('midpointOverlay').classList.remove('show'); });
-$('zoomInBtn').addEventListener('click', ()=>{ if(map) map.setZoom(map.getZoom()+1, true); });
-$('zoomOutBtn').addEventListener('click', ()=>{ if(map) map.setZoom(map.getZoom()-1, true); });
 $('locateMapBtn').addEventListener('click', ()=> goToMyLocation());
 $('shareLocBtn').addEventListener('click', onShareLocBtnClick);
 $('meetTimeToggle').addEventListener('change', (e)=>{
@@ -3442,26 +3876,33 @@ $('searchInput').addEventListener('input', onSearchInput);
   const grip = $('panelGrip');
   const head = document.querySelector('.panel-head');
   const panel = document.querySelector('.panel');
-  const dragZones = [grip, head].filter(Boolean);
-  let startY = 0, startH = 0, dragging = false, moved = false;
+  let startY = 0, startH = 0, dragging = false, moved = false, fromHandle = false;
   const vh = ()=> window.innerHeight;
   const COLLAPSED = ()=> Math.round(vh()*0.34);
   const EXPANDED = ()=> Math.round(vh()*0.72);
 
   function getY(e){ return e.touches ? e.touches[0].clientY : e.clientY; }
+
   function down(e){
-    // 헤더 안의 버튼(중간지점 등)은 드래그가 아니라 클릭으로 처리
-    if(e.target && e.target.closest && e.target.closest('button')) return;
+    // 버튼/입력 요소는 드래그가 아니라 클릭으로 처리
+    if(e.target && e.target.closest && e.target.closest('button, input, textarea, a')) return;
+    fromHandle = !!(e.currentTarget === grip || e.currentTarget === head);
+    // 패널 본문에서 시작한 경우: 목록이 맨 위에 있을 때만 드래그로 인정 (아니면 스크롤 우선)
+    if(!fromHandle && panel.scrollTop > 2) return;
     dragging = true; moved = false;
     startY = getY(e);
     startH = panel.getBoundingClientRect().height;
     panel.classList.add('dragging');
-    if(e.cancelable) e.preventDefault();
+    if(fromHandle && e.cancelable) e.preventDefault();
   }
   function move(e){
     if(!dragging) return;
     const dy = startY - getY(e);
     if(Math.abs(dy) > 6) moved = true;
+    // 본문에서 시작했는데 위로 스크롤하려는 의도면 드래그 취소하고 스크롤 넘김
+    if(!fromHandle && dy > 0 && panel.scrollHeight > panel.clientHeight + 4){
+      dragging = false; panel.classList.remove('dragging'); panel.style.height=''; return;
+    }
     let h = startH + dy;
     h = Math.max(vh()*0.14, Math.min(vh()*0.82, h));
     panel.style.height = h + 'px';
@@ -3475,15 +3916,15 @@ $('searchInput').addEventListener('input', onSearchInput);
     const mid = (COLLAPSED() + EXPANDED())/2;
     panel.style.height = '';
     if(!moved){
-      // 그냥 탭 → 토글
-      panel.classList.toggle('expanded');
+      if(fromHandle) panel.classList.toggle('expanded'); // 손잡이 탭만 토글
     } else {
       if(h >= mid){ panel.classList.add('expanded'); }
       else { panel.classList.remove('expanded'); }
     }
+    syncPanelState();
     setTimeout(()=> mapResize(), 340);
   }
-  dragZones.forEach(zone=>{
+  [grip, head, panel].filter(Boolean).forEach(zone=>{
     zone.addEventListener('touchstart', down, {passive:false});
     zone.addEventListener('touchmove', move, {passive:false});
     zone.addEventListener('touchend', up);
@@ -3492,6 +3933,12 @@ $('searchInput').addEventListener('input', onSearchInput);
   window.addEventListener('mousemove', move);
   window.addEventListener('mouseup', up);
 })();
+// 패널이 펼쳐지면 지도 위 요소들이 가려지지 않게 정리
+function syncPanelState(){
+  const expanded = document.querySelector('.panel').classList.contains('expanded');
+  document.querySelector('.map-wrap')?.classList.toggle('panel-open', expanded);
+  if(expanded){ closeSearchBar(); hideResults(); }
+}
 $('searchClear').addEventListener('click', ()=>{ clearSearch(); hideResults(); $('searchInput').focus(); });
 $('searchBar').addEventListener('click', (e)=>{
   if($('searchWrap').classList.contains('collapsed')){
@@ -3514,8 +3961,14 @@ function markOnboarded(){ try{ localStorage.setItem(ONBOARD_KEY, '1'); }catch(e)
 
 function proceedAfterOnboarding(){
   const session = loadSession();
+  checkGuestMode();
   if(session && session.id){
     myId = session.id; myNickname = session.nickname;
+    // 게스트는 초대받은 방으로 바로 이동
+    if(isGuestMode){
+      const g = guestRoom();
+      if(g){ deepLinkRoom = g; showScreen('joinScreen'); $('joinCode').value = g; reconcileSessionInBackground(); return; }
+    }
     if(deepLinkRoom){
       showScreen('joinScreen');
       $('joinCode').value = deepLinkRoom;
@@ -3540,6 +3993,8 @@ async function guestJoin(){
     const uid = cred.user.uid;
     await set(ref(db, 'users/'+uid), { nickname:nick, provider:'guest', createdAt:Date.now() });
     applySession(uid, nick);
+    try{ localStorage.setItem(LS_GUEST, deepLinkRoom || ''); }catch(e){}
+    isGuestMode = true;
     if(deepLinkRoom){
       showScreen('joinScreen');
       $('joinCode').value = deepLinkRoom;
@@ -3640,6 +4095,44 @@ $('menuOverlay').addEventListener('click', (e)=>{ if(e.target.id==='menuOverlay'
 $('menuLogoutBtn').addEventListener('click', doLogout);
 $('menuHelpBtn').addEventListener('click', ()=>{ closeAccountMenu(); replayOnboarding(); });
 $('menuNicknameBtn').addEventListener('click', ()=>{ closeAccountMenu(); openNicknameSheet(); });
+$('menuNoticeBtn').addEventListener('click', ()=>{
+  closeAccountMenu();
+  renderNotices();
+  $('noticeOverlay').classList.add('show');
+  markNoticesRead();
+});
+$('noticeClose').addEventListener('click', ()=> $('noticeOverlay').classList.remove('show'));
+$('noticeOverlay').addEventListener('click', (e)=>{ if(e.target.id==='noticeOverlay') $('noticeOverlay').classList.remove('show'); });
+
+const ANNOUNCEMENTS = [
+  { date:'2026-08-05', title:'만나는 곳 추천 기능이 추가되었어요 🧭', body:'멤버들의 현재 위치를 기준으로 지하철역·쇼핑몰 중에서 가장 공평한 집합 장소를 추천해드려요. 후보 장소 목록 위의 “중간지점” 버튼을 눌러보세요.' },
+  { date:'2026-08-05', title:'신고·차단 기능이 추가되었어요 🚩', body:'불쾌한 메시지나 후보는 길게 눌러 신고하거나 해당 사용자를 차단할 수 있어요. 차단한 사용자는 메뉴에서 관리할 수 있어요.' },
+  { date:'2026-08-05', title:'채팅에 공감 기능이 생겼어요 💬', body:'메시지를 길게 누르면 👍❤️😂 같은 이모지로 공감하거나, 복사·삭제·신고할 수 있어요.' },
+  { date:'2026-08-04', title:'지도가 네이버 지도로 바뀌었어요 🗺️', body:'더 정확한 국내 지도와 장소 검색을 위해 네이버 지도와 카카오 장소 검색을 도입했어요.' }
+];
+$('menuAnnounceBtn').addEventListener('click', ()=>{
+  closeAccountMenu();
+  $('announceListBox').innerHTML = ANNOUNCEMENTS.map(a=>`
+    <div class="notice-item">
+      <span class="nt-icon">📢</span>
+      <div class="nt-body">
+        <div class="nt-title">${escapeHtml(a.title)}</div>
+        <div class="nt-text">${escapeHtml(a.body)}</div>
+        <div class="nt-time">${escapeHtml(a.date)}</div>
+      </div>
+    </div>`).join('');
+  $('announceOverlay').classList.add('show');
+});
+$('announceClose').addEventListener('click', ()=> $('announceOverlay').classList.remove('show'));
+$('announceOverlay').addEventListener('click', (e)=>{ if(e.target.id==='announceOverlay') $('announceOverlay').classList.remove('show'); });
+
+$('menuBlockedBtn').addEventListener('click', ()=>{
+  closeAccountMenu();
+  renderBlockedList();
+  $('blockedOverlay').classList.add('show');
+});
+$('blockedClose').addEventListener('click', ()=> $('blockedOverlay').classList.remove('show'));
+$('blockedOverlay').addEventListener('click', (e)=>{ if(e.target.id==='blockedOverlay') $('blockedOverlay').classList.remove('show'); });
 $('menuPastBtn').addEventListener('click', ()=>{
   closeAccountMenu();
   const past = getMyRooms().filter(isPastMeetup);
