@@ -648,6 +648,11 @@
   .sheet{ background:var(--sheet-bg); backdrop-filter:blur(var(--blur)); -webkit-backdrop-filter:blur(var(--blur)); border:1px solid var(--border); border-top:1px solid var(--border); width:100%; max-width:480px; border-radius:28px 28px 0 0; padding:12px 22px calc(22px + env(safe-area-inset-bottom)); transform:translateY(102%); transition:transform 0.34s cubic-bezier(0.32,0.72,0,1); max-height:88vh; overflow-y:auto; }
   .overlay.show .sheet{ transform:translateY(0); box-shadow:var(--shadow-lg); }
   .sheet-grip{ width:38px; height:4px; background:var(--border); border-radius:3px; margin:6px auto 16px; }
+  /* 스와이프로 닫기: 손잡이·제목은 드래그 핸들, 시트는 세로 스크롤만 */
+  .sheet{ touch-action:pan-y; overscroll-behavior:contain; }
+  .sheet-grip{ position:relative; }
+  .sheet-grip::after{ content:''; position:absolute; left:-40px; right:-40px; top:-10px; bottom:-14px; }
+  .sheet > h3, .sheet > .sub{ touch-action:none; user-select:none; -webkit-user-select:none; }
   .sheet h3{ margin:0 0 4px; font-size:1.12rem; font-weight:800; }
   .sheet .sub{ font-size:0.8rem; color:var(--text-soft); margin:0 0 16px; }
   .sheet-actions{ display:flex; gap:10px; margin-top:8px; }
@@ -3908,6 +3913,84 @@ $('shareCopyBtn').addEventListener('click', ()=> copyText(roomCode));
 $('shareCopyLinkBtn').addEventListener('click', ()=> copyText(joinLink(roomCode)));
 $('shareOverlay').addEventListener('click', (e)=>{ if(e.target.id==='shareOverlay') $('shareOverlay').classList.remove('show'); });
 $('searchInput').addEventListener('input', onSearchInput);
+/* ================= 모든 바텀시트 스와이프로 닫기 ================= */
+(function setupSheetSwipe(){
+  const CLOSE_DIST = 90;     // 이만큼 내리면 닫힘
+  const CLOSE_VEL  = 0.55;   // 빠르게 튕기면 거리와 무관하게 닫힘
+
+  document.querySelectorAll('.overlay').forEach(overlay=>{
+    const sheet = overlay.querySelector('.sheet');
+    if(!sheet) return;
+
+    let startY=0, lastY=0, lastT=0, dy=0, dragging=false, fromHandle=false;
+    const getY = e => e.touches ? e.touches[0].clientY : e.clientY;
+
+    function down(e){
+      if(!overlay.classList.contains('show')) return;
+      if(e.target.closest && e.target.closest('button, input, textarea, a, select')) return;
+      // 손잡이·제목 영역이면 항상, 본문이면 맨 위까지 올라와 있을 때만
+      fromHandle = !!(e.target.closest && e.target.closest('.sheet-grip, h3, .sub'));
+      if(!fromHandle && sheet.scrollTop > 2) return;
+      dragging = true; dy = 0;
+      startY = lastY = getY(e);
+      lastT = Date.now();
+      sheet.style.transition = 'none';
+    }
+    function move(e){
+      if(!dragging) return;
+      const y = getY(e);
+      dy = y - startY;                 // 아래로 내리면 +
+      // 위로 올리려 하면 드래그 취소 (본문 스크롤 양보)
+      if(dy < 0){
+        if(!fromHandle){ cancel(); return; }
+        dy = dy * 0.25;                // 손잡이에서는 살짝 저항감만
+      }
+      lastY = y; lastT = Date.now();
+      sheet.style.transform = `translateY(${Math.max(0, dy)}px)`;
+      if(e.cancelable && dy > 0) e.preventDefault();
+    }
+    function up(){
+      if(!dragging) return;
+      dragging = false;
+      const dt = Math.max(1, Date.now() - lastT);
+      const vel = (lastY - startY) / dt;   // px/ms
+      sheet.style.transition = '';
+      sheet.style.transform = '';
+      if(dy > CLOSE_DIST || vel > CLOSE_VEL){
+        closeOverlayById(overlay.id);
+      }
+      dy = 0;
+    }
+    function cancel(){
+      dragging = false;
+      sheet.style.transition = '';
+      sheet.style.transform = '';
+      dy = 0;
+    }
+
+    sheet.addEventListener('touchstart', down, {passive:true});
+    sheet.addEventListener('touchmove',  move, {passive:false});
+    sheet.addEventListener('touchend',   up);
+    sheet.addEventListener('touchcancel',cancel);
+  });
+})();
+
+// 시트별 전용 닫기 함수가 있으면 그것을 쓰고, 없으면 클래스만 제거
+function closeOverlayById(id){
+  switch(id){
+    case 'addOverlay':      closeAdd(); return;
+    case 'detailOverlay':   closeDetail(); return;
+    case 'settingsOverlay': closeSettings(); return;
+    case 'chatOverlay':     closeChat(); return;
+    case 'msgActionOverlay':closeMsgActions(); return;
+    case 'reportOverlay':   $('reportOverlay').classList.remove('show'); reportCtx=null; return;
+    default: {
+      const el = $(id);
+      if(el) el.classList.remove('show');
+    }
+  }
+}
+
 (function setupPanelDrag(){
   const panel = document.querySelector('.panel');
   const grip  = $('panelGrip');
