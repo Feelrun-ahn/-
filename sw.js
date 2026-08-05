@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bijeong-map-v22';
+const CACHE_NAME = 'bijeong-map-v23';
 const APP_SHELL = [
   './index.html',
   './manifest.json',
