@@ -481,7 +481,8 @@
   .status-chip .st-value{ font-size:0.88rem; font-weight:800; letter-spacing:-0.2px; }
   .status-chip.dday{ background:linear-gradient(135deg,var(--accent),var(--accent-2)); color:#fff; }
   .status-chip.dday .st-label{ color:rgba(255,255,255,0.85); }
-  .status-chip.final{ background:linear-gradient(135deg,#F5A623,#F7931E); color:#fff; }
+  .status-chip.final{ background:linear-gradient(135deg,#2F9E44,#37B24D); color:#fff; }
+  .status-chip.meet{ background:linear-gradient(135deg,#F5A623,#F7931E); color:#fff; }
   .status-chip.final .st-label{ color:rgba(255,255,255,0.9); }
   .status-chip.set-btn{ color:var(--accent); font-weight:700; font-size:0.82rem; cursor:pointer; }
 
@@ -490,6 +491,10 @@
   .locate-btn{ width:38px; height:38px; border-radius:11px; border:1px solid var(--border); background:var(--surface-strong); backdrop-filter:blur(var(--blur)); -webkit-backdrop-filter:blur(var(--blur)); box-shadow:0 2px 6px rgba(23,25,35,0.08); font-size:1.1rem; cursor:pointer; display:flex; align-items:center; justify-content:center; }
   .locate-btn:active{ background:var(--accent-soft); }
 
+  .map-controls{
+    position:absolute; right:12px; bottom:14px; z-index:9;
+    display:flex; flex-direction:column; gap:8px;
+  }
   .member-legend{
     position:absolute; left:50%; transform:translateX(-50%); bottom:10px; z-index:9;
     display:flex; gap:6px; max-width:86%; overflow-x:auto; padding:4px;
@@ -539,6 +544,23 @@
   .pin span{ transform:rotate(45deg); color:#fff; font-size:13px; font-weight:700; }
   .temp-marker-dot{ width:22px; height:22px; border-radius:50%; background:rgba(91,91,214,0.22); border:3px solid #5B5BD6; box-sizing:border-box; }
   .my-loc-dot{ width:16px; height:16px; border-radius:50%; background:#2F80ED; border:3px solid #fff; box-shadow:0 1px 4px rgba(0,0,0,0.3); box-sizing:border-box; }
+  .mp-spinner{ width:34px; height:34px; margin:0 auto; border:3px solid var(--line); border-top-color:var(--accent); border-radius:50%; animation:mpSpin 0.8s linear infinite; }
+  @keyframes mpSpin{ to{ transform:rotate(360deg);} }
+  .mp-card{ position:relative; border-radius:20px; padding:18px 16px 16px; background:linear-gradient(150deg,var(--accent-soft),var(--line)); border:1.5px solid var(--accent); margin-top:6px; }
+  .mp-badge{ position:absolute; top:-10px; left:16px; background:linear-gradient(135deg,var(--accent),var(--accent-2)); color:#fff; font-size:0.68rem; font-weight:800; padding:4px 11px; border-radius:9px; box-shadow:0 4px 12px rgba(91,91,214,0.35); }
+  .mp-name{ font-size:1.12rem; font-weight:800; color:var(--text); margin-bottom:3px; }
+  .mp-addr{ font-size:0.78rem; color:var(--text-soft); margin-bottom:12px; }
+  .mp-reasons{ display:flex; flex-direction:column; gap:7px; }
+  .mp-reason{ display:flex; align-items:flex-start; gap:7px; font-size:0.8rem; color:var(--text); line-height:1.45; }
+  .mp-reason .ic{ flex:none; }
+  .mp-note{ margin-top:14px; padding:12px 14px; border-radius:14px; background:var(--line); font-size:0.76rem; color:var(--text-soft); line-height:1.6; }
+  .mp-alt-title{ margin:18px 0 8px; font-size:0.76rem; font-weight:800; color:var(--text-soft); }
+  .mp-alt{ display:flex; align-items:center; gap:10px; padding:11px 13px; border-radius:14px; border:1px solid var(--border); background:var(--surface); margin-bottom:7px; cursor:pointer; }
+  .mp-alt:active{ background:var(--accent-soft); }
+  .mp-alt-name{ flex:1; font-size:0.85rem; font-weight:700; color:var(--text); }
+  .mp-alt-dist{ font-size:0.72rem; font-weight:700; color:var(--accent); background:var(--accent-soft); padding:3px 8px; border-radius:9px; }
+  .meet-pin{ width:42px; height:42px; border-radius:50% 50% 50% 4px; transform:rotate(-45deg); background:linear-gradient(135deg,#F7931E,#FFB84D); display:flex; align-items:center; justify-content:center; border:3px solid #fff; box-shadow:0 4px 14px rgba(247,147,30,0.5); }
+  .meet-pin span{ transform:rotate(45deg); font-size:17px; }
   .midpoint-pin{ width:40px; height:40px; border-radius:50%; background:var(--surface-strong); border:2.5px solid var(--accent); display:flex; align-items:center; justify-content:center; font-size:1.15rem; box-shadow:0 6px 18px rgba(91,91,214,0.4); animation:mpPop 0.4s cubic-bezier(0.34,1.56,0.64,1); }
   @keyframes mpPop{ from{ transform:scale(0);} to{ transform:scale(1);} }
   .naver-iw{ border-radius:15px; box-shadow:var(--shadow-lg); background:var(--sheet-bg); backdrop-filter:blur(var(--blur)); -webkit-backdrop-filter:blur(var(--blur)); color:var(--text); padding:12px 14px; max-width:220px; border:1px solid var(--border); }
@@ -970,14 +992,24 @@
       <span class="big" id="weatherIcon">🌤️</span>
       <div><div class="st-label">날씨</div><div class="st-value" id="weatherValue">-</div></div>
     </div>
+    <div class="status-chip meet hidden" id="meetChip">
+      <span class="big">🧭</span>
+      <div><div class="st-label">만나는 곳</div><div class="st-value" id="meetChipValue">-</div></div>
+    </div>
     <div class="status-chip final hidden" id="finalChip">
       <span class="big">✅</span>
-      <div><div class="st-label">확정 장소</div><div class="st-value" id="finalValue">-</div></div>
+      <div><div class="st-label">목적지 (확정)</div><div class="st-value" id="finalValue">-</div></div>
     </div>
   </div>
 
   <div class="map-wrap">
     <div id="map"></div>
+    <div class="map-controls">
+      <button class="locate-btn" id="zoomInBtn" title="확대">＋</button>
+      <button class="locate-btn" id="zoomOutBtn" title="축소">－</button>
+      <button class="locate-btn" id="locateMapBtn" title="현재 위치">📍</button>
+      <button class="locate-btn" id="shareLocBtn" title="내 위치 실시간 공유">📡</button>
+    </div>
     <div class="member-legend" id="memberLegend"></div>
     <div class="search-wrap collapsed" id="searchWrap">
       <div class="search-bar" id="searchBar">
@@ -1266,6 +1298,41 @@
 </div>
 
 <!-- ============ 위치 공유 동의 ============ -->
+<div class="overlay" id="midpointOverlay">
+  <div class="sheet">
+    <div class="sheet-grip"></div>
+    <h3>🧭 만나는 곳 추천</h3>
+    <p class="sub" id="midpointSub">모두에게 공평한 지점을 찾고 있어요...</p>
+
+    <div id="midpointLoading" style="padding:26px 0; text-align:center;">
+      <div class="mp-spinner"></div>
+      <p style="margin-top:12px; font-size:0.82rem; color:var(--text-soft);">주변 지하철역·쇼핑몰을 살펴보는 중이에요</p>
+    </div>
+
+    <div id="midpointResult" class="hidden">
+      <div class="mp-card">
+        <div class="mp-badge">추천</div>
+        <div class="mp-name" id="mpName">-</div>
+        <div class="mp-addr" id="mpAddr">-</div>
+        <div class="mp-reasons" id="mpReasons"></div>
+      </div>
+      <div class="mp-note">
+        ℹ️ <b>만나는 곳</b>은 다 같이 모이는 집합 장소예요.<br>실제로 놀러 갈 <b>목적지(확정 장소)</b>와는 별개예요.
+      </div>
+      <div id="mpAlternatives"></div>
+      <div class="sheet-actions" style="margin-top:16px;">
+        <button class="btn btn-cancel" id="mpCancelBtn">닫기</button>
+        <button class="btn btn-save" id="mpSetBtn">여기서 만나기</button>
+      </div>
+    </div>
+
+    <div id="midpointEmpty" class="hidden" style="padding:20px 0; text-align:center;">
+      <p style="font-size:0.86rem; color:var(--text-soft); line-height:1.7;" id="mpEmptyMsg"></p>
+      <button class="btn btn-cancel" id="mpEmptyClose" style="margin-top:14px; width:100%;">닫기</button>
+    </div>
+  </div>
+</div>
+
 <div class="overlay" id="pastOverlay">
   <div class="sheet">
     <div class="sheet-grip"></div>
@@ -1565,7 +1632,7 @@ function showScreen(idOrNull){
 
 /* ================= 뒤로가기(안드로이드/브라우저) 처리 ================= */
 let currentScreen = null;
-const OPEN_SHEET_IDS = ['addOverlay','settingsOverlay','shareOverlay','membersOverlay','detailOverlay','nicknameOverlay','feedbackOverlay','weatherOverlay','chatOverlay','locShareOverlay','pastOverlay','menuOverlay'];
+const OPEN_SHEET_IDS = ['addOverlay','settingsOverlay','shareOverlay','membersOverlay','detailOverlay','nicknameOverlay','feedbackOverlay','weatherOverlay','chatOverlay','locShareOverlay','pastOverlay','midpointOverlay','menuOverlay'];
 function anyOpenSheet(){
   return OPEN_SHEET_IDS.find(id=>{ const el=$(id); return el && el.classList.contains('show'); }) || null;
 }
@@ -1722,17 +1789,11 @@ function renderRoomList(){
     return;
   }
   const upcoming = all.filter(r=> !isPastMeetup(r));
-  const past = all.filter(isPastMeetup);
   let html = upcoming.map(roomCardHTML).join('');
   if(upcoming.length === 0){
-    html = `<div class="room-empty-full" style="padding:40px 20px;"><span class="big">🗺️</span>다가오는 모임이 없어요<br>새 모임을 만들어 보세요</div>`;
-  }
-  if(past.length){
-    html += `<button class="past-menu-hint" id="pastMenuHint">📚 지난 모임 ${past.length}개는 메뉴에서 볼 수 있어요 →</button>`;
+    html = `<div class="room-empty-full" style="padding:40px 20px;"><span class="big">🗺️</span>다가오는 모임이 없어요<br>새 모임을 만들거나<br>메뉴에서 지난 모임을 볼 수 있어요</div>`;
   }
   box.innerHTML = html;
-  const hint = $('pastMenuHint');
-  if(hint) hint.addEventListener('click', openAccountMenu);
   box.querySelectorAll('.room-card').forEach(el=>{
     el.addEventListener('click', (e)=>{
       if(e.target.closest('[data-del]')) return;
@@ -2011,6 +2072,7 @@ function onRoomUpdate(){
   renderDDay();
   renderWeather();
   renderFinal();
+  renderMeetPoint();
   renderList();
   renderMarkers();
   renderMemberLegend();
@@ -2418,36 +2480,209 @@ function subscribeMemberLocations(){
 }
 let latestMemberLocs = {};
 
-/* ================= 중간지점 추천 ================= */
-let midpointMarker = null;
-function findMidpoint(){
-  // 1순위: 실시간 위치 공유 중인 멤버들의 평균
-  const locs = Object.values(latestMemberLocs || {}).filter(l=> typeof l.lat==='number' && typeof l.lng==='number');
-  let pts = locs.map(l=> ({lat:l.lat, lng:l.lng}));
-  let basis = '위치 공유 중인 ' + pts.length + '명';
-  // 2순위: 후보 장소들의 평균
+/* ================= 만나는 곳 추천 ================= */
+let midpointMarker = null;      // 계산된 기하학적 중심(참고용)
+let meetPointMarker = null;     // 확정된 만나는 곳
+let mpCandidates = [];
+let mpSelected = null;
+let mpMemberPts = [];
+
+function getMyCurrentPos(){
+  return new Promise((resolve)=>{
+    if(!navigator.geolocation){ resolve(null); return; }
+    navigator.geolocation.getCurrentPosition(
+      (pos)=> resolve({ lat:pos.coords.latitude, lng:pos.coords.longitude }),
+      ()=> resolve(null),
+      { enableHighAccuracy:true, timeout:8000, maximumAge:60000 }
+    );
+  });
+}
+
+// 카카오 카테고리/키워드 검색을 Promise로 감싸기
+function kakaoCategorySearch(code, lat, lng, radius){
+  return new Promise((resolve)=>{
+    if(typeof kakao==='undefined' || !kakao.maps || !kakao.maps.services){ resolve([]); return; }
+    const ps = new kakao.maps.services.Places();
+    ps.categorySearch(code, (data, status)=>{
+      resolve(status === kakao.maps.services.Status.OK ? (data||[]) : []);
+    }, { location:new kakao.maps.LatLng(lat,lng), radius, sort:kakao.maps.services.SortBy.DISTANCE });
+  });
+}
+function kakaoKeywordSearch(kw, lat, lng, radius){
+  return new Promise((resolve)=>{
+    if(typeof kakao==='undefined' || !kakao.maps || !kakao.maps.services){ resolve([]); return; }
+    const ps = new kakao.maps.services.Places();
+    ps.keywordSearch(kw, (data, status)=>{
+      resolve(status === kakao.maps.services.Status.OK ? (data||[]) : []);
+    }, { location:new kakao.maps.LatLng(lat,lng), radius, sort:kakao.maps.services.SortBy.DISTANCE });
+  });
+}
+
+async function findMidpoint(){
+  // --- 1. 멤버들의 현재 위치 모으기 ---
+  const shared = Object.values(latestMemberLocs || {})
+    .filter(l=> typeof l.lat==='number' && typeof l.lng==='number' && l.id !== myId)
+    .map(l=> ({ lat:l.lat, lng:l.lng, nickname:l.nickname || '친구' }));
+
+  $('midpointOverlay').classList.add('show');
+  $('midpointLoading').classList.remove('hidden');
+  $('midpointResult').classList.add('hidden');
+  $('midpointEmpty').classList.add('hidden');
+  $('midpointSub').textContent = '모두에게 공평한 지점을 찾고 있어요...';
+
+  const mine = await getMyCurrentPos();
+  const pts = [...shared];
+  if(mine) pts.push({ lat:mine.lat, lng:mine.lng, nickname:'나' });
+  mpMemberPts = pts;
+
   if(pts.length < 2){
-    pts = Object.values(places||{}).map(p=> ({lat:p.lat, lng:p.lng}));
-    basis = '후보 장소 ' + pts.length + '곳';
-  }
-  if(pts.length < 2){
-    showToast('중간지점을 구하려면 위치 공유 2명 이상 또는 후보 2곳 이상이 필요해요');
+    $('midpointLoading').classList.add('hidden');
+    $('midpointEmpty').classList.remove('hidden');
+    $('mpEmptyMsg').innerHTML = '중간지점을 찾으려면 <b>2명 이상의 현재 위치</b>가 필요해요.<br><br>지도의 📡 버튼으로 위치 공유를 켜고,<br>친구들에게도 부탁해 보세요!';
+    $('midpointSub').textContent = '위치 정보가 더 필요해요';
     return;
   }
-  const lat = pts.reduce((s,p)=>s+p.lat,0)/pts.length;
-  const lng = pts.reduce((s,p)=>s+p.lng,0)/pts.length;
-  if(midpointMarker){ midpointMarker.setMap(null); midpointMarker=null; }
-  midpointMarker = new naver.maps.Marker({
-    position: new naver.maps.LatLng(lat,lng), map,
-    icon: { content:'<div class="midpoint-pin">🧭</div>', size:new naver.maps.Size(40,40), anchor:new naver.maps.Point(20,20) },
-    zIndex: 300
+
+  // --- 2. 기하학적 중심 계산 ---
+  const cLat = pts.reduce((s,p)=>s+p.lat,0)/pts.length;
+  const cLng = pts.reduce((s,p)=>s+p.lng,0)/pts.length;
+
+  // --- 3. 중심 주변의 '만나기 좋은 곳' 실제 검색 ---
+  const radius = 3000;
+  const [subways, malls, depts] = await Promise.all([
+    kakaoCategorySearch('SW8', cLat, cLng, radius),                 // 지하철역
+    kakaoKeywordSearch('복합쇼핑몰', cLat, cLng, radius),
+    kakaoKeywordSearch('백화점', cLat, cLng, radius)
+  ]);
+
+  const pool = [];
+  const seen = new Set();
+  const push = (arr, type, weight)=>{
+    arr.forEach(it=>{
+      const key = it.place_name + '|' + it.x;
+      if(seen.has(key)) return;
+      seen.add(key);
+      const lat = parseFloat(it.y), lng = parseFloat(it.x);
+      if(isNaN(lat) || isNaN(lng)) return;
+      pool.push({
+        name: it.place_name,
+        addr: it.road_address_name || it.address_name || '',
+        lat, lng, type, weight,
+        kakaoUrl: it.place_url || ''
+      });
+    });
+  };
+  push(subways, '지하철역', 1.0);
+  push(malls, '복합쇼핑몰', 0.82);
+  push(depts, '백화점', 0.78);
+
+  if(pool.length === 0){
+    $('midpointLoading').classList.add('hidden');
+    $('midpointEmpty').classList.remove('hidden');
+    $('mpEmptyMsg').innerHTML = '이 근처에서는 지하철역이나 쇼핑몰을 찾지 못했어요.<br><br>지도에서 직접 만날 곳을 골라 보세요!';
+    $('midpointSub').textContent = '추천할 만한 곳을 찾지 못했어요';
+    return;
+  }
+
+  // --- 4. 점수 계산: 공평성 + 접근성 + 중심 근접 ---
+  pool.forEach(c=>{
+    const dists = pts.map(p=> distKm(p.lat, p.lng, c.lat, c.lng));
+    const maxD = Math.max(...dists);
+    const minD = Math.min(...dists);
+    const avgD = dists.reduce((a,b)=>a+b,0)/dists.length;
+    c.dists = dists;
+    c.maxD = maxD;
+    c.avgD = avgD;
+    c.gap = maxD - minD;                       // 편차가 작을수록 공평
+    c.centerD = distKm(cLat, cLng, c.lat, c.lng);
+    // 낮을수록 좋은 점수 (가중 합)
+    c.score = (avgD * 1.0) + (c.gap * 1.6) + (c.centerD * 0.8) - (c.weight * 0.55);
   });
-  map.morph(new naver.maps.LatLng(lat,lng), 15, { duration:800 });
-  haptic(12);
-  showToast(`${basis} 기준 중간지점이에요 · 지도를 눌러 근처에 후보를 올려 보세요`);
-  // 접혀있던 패널 내리고 지도 보이게
-  document.querySelector('.panel').classList.remove('expanded');
-  setTimeout(()=> mapResize(), 340);
+  pool.sort((a,b)=> a.score - b.score);
+  mpCandidates = pool.slice(0, 4);
+  mpSelected = mpCandidates[0];
+
+  renderMidpointResult();
+}
+
+function renderMidpointResult(){
+  const c = mpSelected;
+  if(!c) return;
+  $('midpointLoading').classList.add('hidden');
+  $('midpointEmpty').classList.add('hidden');
+  $('midpointResult').classList.remove('hidden');
+  $('midpointSub').textContent = `${mpMemberPts.length}명의 현재 위치를 기준으로 골랐어요`;
+
+  $('mpName').textContent = c.name;
+  $('mpAddr').textContent = c.addr;
+
+  // 사람이 읽을 수 있는 '추천 이유' 생성
+  const reasons = [];
+  if(c.type === '지하철역') reasons.push(['🚇', '지하철역이라 어디서든 찾아오기 쉬워요']);
+  else if(c.type === '복합쇼핑몰') reasons.push(['🛍️', '복합쇼핑몰이라 기다리기 좋고 눈에 잘 띄어요']);
+  else reasons.push(['🏬', '백화점이라 약속 장소로 찾기 쉬워요']);
+
+  reasons.push(['📏', `평균 ${c.avgD < 1 ? Math.round(c.avgD*1000)+'m' : c.avgD.toFixed(1)+'km'} 거리 · 가장 먼 사람도 ${c.maxD < 1 ? Math.round(c.maxD*1000)+'m' : c.maxD.toFixed(1)+'km'}`]);
+
+  if(c.gap < 1.2) reasons.push(['⚖️', '모두의 거리가 비슷해서 공평해요']);
+  else reasons.push(['⚖️', '이 근처에서는 가장 균형 잡힌 위치예요']);
+
+  $('mpReasons').innerHTML = reasons.map(([ic,txt])=>
+    `<div class="mp-reason"><span class="ic">${ic}</span><span>${escapeHtml(txt)}</span></div>`
+  ).join('');
+
+  // 대안 후보
+  const alts = mpCandidates.filter(x=> x !== c);
+  $('mpAlternatives').innerHTML = alts.length
+    ? `<div class="mp-alt-title">다른 후보</div>` + alts.map((a,i)=>
+        `<div class="mp-alt" data-alt="${mpCandidates.indexOf(a)}">
+           <span class="mp-alt-name">${escapeHtml(a.name)}</span>
+           <span class="mp-alt-dist">평균 ${a.avgD < 1 ? Math.round(a.avgD*1000)+'m' : a.avgD.toFixed(1)+'km'}</span>
+         </div>`).join('')
+    : '';
+  $('mpAlternatives').querySelectorAll('.mp-alt').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      mpSelected = mpCandidates[parseInt(el.dataset.alt,10)];
+      haptic(8);
+      renderMidpointResult();
+    });
+  });
+}
+
+// 만나는 곳으로 확정 (목적지와는 별개)
+function setMeetingPoint(){
+  const c = mpSelected;
+  if(!c) return;
+  update(ref(db, 'rooms/'+roomCode), {
+    meetPoint: { name:c.name, addr:c.addr, lat:c.lat, lng:c.lng, setBy:myNickname, ts:Date.now() }
+  }).then(()=>{
+    showToast(`'${c.name}'을(를) 만나는 곳으로 정했어요 🧭`);
+    haptic([14,50,14]);
+    $('midpointOverlay').classList.remove('show');
+    map.morph(new naver.maps.LatLng(c.lat, c.lng), 16, { duration:800 });
+  }).catch(()=> showToast('저장하지 못했어요 · 인터넷을 확인해 주세요'));
+}
+
+function renderMeetPoint(){
+  if(meetPointMarker){ meetPointMarker.setMap(null); meetPointMarker=null; }
+  const mp = room && room.meetPoint;
+  const chip = $('meetChip');
+  if(!mp){ if(chip) chip.classList.add('hidden'); return; }
+  if(chip){
+    chip.classList.remove('hidden');
+    $('meetChipValue').textContent = mp.name;
+  }
+  if(!map) return;
+  meetPointMarker = new naver.maps.Marker({
+    position: new naver.maps.LatLng(mp.lat, mp.lng), map,
+    icon: { content:'<div class="meet-pin"><span>🧭</span></div>', size:new naver.maps.Size(42,42), anchor:new naver.maps.Point(21,40) },
+    zIndex: 400
+  });
+  naver.maps.Event.addListener(meetPointMarker, 'click', ()=>{
+    const iw = getInfoWindow();
+    iw.setContent(`<div class="naver-iw"><div class="pop-name">🧭 만나는 곳</div><div class="pop-memo">${escapeHtml(mp.name)}</div><div class="pop-meta">${escapeHtml(mp.setBy||'')}님이 정함</div></div>`);
+    iw.open(map, meetPointMarker);
+  });
 }
 function renderMemberLocations(locs){
   const seen = new Set();
@@ -3028,6 +3263,8 @@ function leaveRoom(){
   closeMarkerPopup();
   clearTempMarker();
   if(midpointMarker){ try{ midpointMarker.setMap(null); }catch(e){} midpointMarker=null; }
+  if(meetPointMarker){ try{ meetPointMarker.setMap(null); }catch(e){} meetPointMarker=null; }
+  $('meetChip').classList.add('hidden');
   closeDetail();
   $('addOverlay').classList.remove('show');
   room=null; places={}; roomCode=null;
@@ -3064,22 +3301,6 @@ function mapResize(){
     naver.maps.Event.trigger(map, 'resize');
   }catch(e){ console.warn('mapResize 실패', e); }
 }
-function addMapControlButton(id, emoji, title, position, onClick){
-  const html = `<div style="margin:8px;"><button id="${id}" class="locate-btn" title="${title}">${emoji}</button></div>`;
-  const ctrl = new naver.maps.CustomControl(html, { position });
-  ctrl.setMap(map);
-  // getElement()로 컨트롤 자신의 DOM을 직접 받아야 확실히 리스너가 붙음
-  let el = null;
-  try{ el = ctrl.getElement(); }catch(e){}
-  const btn = (el && el.querySelector ? el.querySelector('button') : null) || document.getElementById(id);
-  if(btn){
-    naver.maps.Event.addDOMListener(btn, 'click', (e)=>{
-      if(e && e.stopPropagation) e.stopPropagation();
-      onClick();
-    });
-  }
-  return btn;
-}
 function initMap(){
   if(typeof naver === 'undefined' || !naver.maps){
     $('map').innerHTML = '<div style="padding:40px 20px; text-align:center; color:var(--text-soft); font-size:0.85rem; line-height:1.7;">지도 스크립트 자체가 안 불러와졌어 😥<br>(naver 객체가 없음 · 네트워크 또는 스크립트 태그 확인)</div>';
@@ -3109,14 +3330,6 @@ function initMap(){
       } else { openAdd(latlng); }
     });
     naver.maps.Event.addListener(map, 'dragstart', hideResults);
-
-    // 확대/축소 버튼 (네이버 기본 스타일 대신 우리 앱 디자인에 맞는 커스텀 버튼)
-    addMapControlButton('zoomInBtn', '＋', '확대', naver.maps.Position.BOTTOM_LEFT, ()=> map.setZoom(map.getZoom()+1, true));
-    addMapControlButton('zoomOutBtn', '－', '축소', naver.maps.Position.BOTTOM_LEFT, ()=> map.setZoom(map.getZoom()-1, true));
-    // 현재 위치로 지도 이동 버튼 (검색창과 안 겹치게 하단에 배치)
-    addMapControlButton('locateMapBtn', '📍', '현재 위치', naver.maps.Position.BOTTOM_RIGHT, goToMyLocation);
-    // 내 위치를 멤버들과 실시간 공유하는 토글 버튼
-    addMapControlButton('shareLocBtn', '📡', '내 위치 실시간 공유', naver.maps.Position.BOTTOM_RIGHT, onShareLocBtnClick);
 
     // 시작 시 현재 위치로 이동 시도 (권한 거부/실패 시 목운중 유지)
     goToMyLocation(true);
@@ -3196,6 +3409,14 @@ $('detailEditBtn').addEventListener('click', ()=>{
 $('settingsCancel').addEventListener('click', closeSettings);
 $('settingsSave').addEventListener('click', saveSettings);
 $('midpointBtn').addEventListener('click', findMidpoint);
+$('mpSetBtn').addEventListener('click', setMeetingPoint);
+$('mpCancelBtn').addEventListener('click', ()=> $('midpointOverlay').classList.remove('show'));
+$('mpEmptyClose').addEventListener('click', ()=> $('midpointOverlay').classList.remove('show'));
+$('midpointOverlay').addEventListener('click', (e)=>{ if(e.target.id==='midpointOverlay') $('midpointOverlay').classList.remove('show'); });
+$('zoomInBtn').addEventListener('click', ()=>{ if(map) map.setZoom(map.getZoom()+1, true); });
+$('zoomOutBtn').addEventListener('click', ()=>{ if(map) map.setZoom(map.getZoom()-1, true); });
+$('locateMapBtn').addEventListener('click', ()=> goToMyLocation());
+$('shareLocBtn').addEventListener('click', onShareLocBtnClick);
 $('meetTimeToggle').addEventListener('change', (e)=>{
   $('meetTimeField').classList.toggle('hidden', !e.target.checked);
 });
@@ -3229,6 +3450,8 @@ $('searchInput').addEventListener('input', onSearchInput);
 
   function getY(e){ return e.touches ? e.touches[0].clientY : e.clientY; }
   function down(e){
+    // 헤더 안의 버튼(중간지점 등)은 드래그가 아니라 클릭으로 처리
+    if(e.target && e.target.closest && e.target.closest('button')) return;
     dragging = true; moved = false;
     startY = getY(e);
     startH = panel.getBoundingClientRect().height;
