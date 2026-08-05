@@ -327,6 +327,14 @@
   .field label{ display:block; font-size:0.76rem; font-weight:700; color:var(--text-soft); margin-bottom:6px; }
   .field input, .field textarea{ width:100%; border:2px solid var(--border); border-radius:13px; padding:12px 14px; font-size:0.95rem; font-family:inherit; font-weight:500; color:var(--text); outline:none; background:var(--surface); backdrop-filter:blur(var(--blur)); -webkit-backdrop-filter:blur(var(--blur)); transition:border-color 0.2s ease, background 0.2s ease; }
   .field input:focus, .field textarea:focus{ border-color:var(--accent); background:var(--surface-strong); }
+  /* iOS Safari의 date/time 입력은 기본 스타일이 깨지므로 명시적으로 지정 */
+  .field input[type="date"], .field input[type="time"]{
+    -webkit-appearance:none; appearance:none;
+    min-height:48px; height:48px; line-height:normal;
+    display:block; text-align:left;
+  }
+  .field input[type="date"]::-webkit-date-and-time-value{ text-align:left; }
+  .field input[type="date"]::-webkit-calendar-picker-indicator{ opacity:0.5; }
   .field.code input{ text-align:center; font-size:1.5rem; font-weight:800; letter-spacing:6px; text-transform:uppercase; }
   .emoji-input-row{ display:flex; align-items:center; gap:12px; }
   .emoji-preview{ width:52px; height:52px; border-radius:16px; background:var(--surface); backdrop-filter:blur(var(--blur)); -webkit-backdrop-filter:blur(var(--blur)); border:1.5px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:1.6rem; flex-shrink:0; transition:transform 0.15s ease; }
@@ -1041,9 +1049,9 @@
       <span class="big" id="weatherIcon">🌤️</span>
       <div><div class="st-label">날씨</div><div class="st-value" id="weatherValue">-</div></div>
     </div>
-    <div class="status-chip meet hidden" id="meetChip">
+    <div class="status-chip meet hidden" id="meetChip" style="cursor:pointer;">
       <span class="big">🧭</span>
-      <div><div class="st-label">만나는 곳</div><div class="st-value" id="meetChipValue">-</div></div>
+      <div><div class="st-label">만나는 곳 (눌러서 변경)</div><div class="st-value" id="meetChipValue">-</div></div>
     </div>
     <div class="status-chip final hidden" id="finalChip">
       <span class="big">✅</span>
@@ -1057,7 +1065,6 @@
       <button class="locate-btn" id="shareLocBtn" title="내 위치 실시간 공유">📡</button>
       <button class="locate-btn" id="locateMapBtn" title="현재 위치">📍</button>
     </div>
-    <div class="member-legend" id="memberLegend"></div>
     <div class="search-wrap collapsed" id="searchWrap">
       <div class="search-bar" id="searchBar">
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
@@ -1426,6 +1433,22 @@
   </div>
 </div>
 
+<div class="overlay" id="meetManageOverlay">
+  <div class="sheet">
+    <div class="sheet-grip"></div>
+    <h3>🧭 만나는 곳</h3>
+    <p class="sub" id="meetManageSub">다 같이 모이는 집합 장소예요</p>
+    <div class="mp-card" style="margin-bottom:14px;">
+      <div class="mp-name" id="meetManageName">-</div>
+      <div class="mp-addr" id="meetManageAddr">-</div>
+    </div>
+    <button class="action-item" id="meetGoBtn"><span>🗺️</span>지도에서 보기</button>
+    <button class="action-item" id="meetChangeBtn"><span>🔄</span>다른 곳으로 다시 추천받기</button>
+    <button class="action-item danger" id="meetClearBtn"><span>🗑️</span>만나는 곳 지우기</button>
+    <button class="btn btn-cancel" id="meetManageClose" style="width:100%; margin-top:10px;">닫기</button>
+  </div>
+</div>
+
 <div class="overlay" id="midpointOverlay">
   <div class="sheet">
     <div class="sheet-grip"></div>
@@ -1785,7 +1808,7 @@ function showScreen(idOrNull){
 
 /* ================= 뒤로가기(안드로이드/브라우저) 처리 ================= */
 let currentScreen = null;
-const OPEN_SHEET_IDS = ['addOverlay','settingsOverlay','shareOverlay','membersOverlay','detailOverlay','nicknameOverlay','feedbackOverlay','weatherOverlay','chatOverlay','locShareOverlay','pastOverlay','midpointOverlay','msgActionOverlay','reportOverlay','blockedOverlay','noticeOverlay','announceOverlay','menuOverlay'];
+const OPEN_SHEET_IDS = ['addOverlay','settingsOverlay','shareOverlay','membersOverlay','detailOverlay','nicknameOverlay','feedbackOverlay','weatherOverlay','chatOverlay','locShareOverlay','pastOverlay','midpointOverlay','meetManageOverlay','msgActionOverlay','reportOverlay','blockedOverlay','noticeOverlay','announceOverlay','menuOverlay'];
 function anyOpenSheet(){
   return OPEN_SHEET_IDS.find(id=>{ const el=$(id); return el && el.classList.contains('show'); }) || null;
 }
@@ -2262,20 +2285,10 @@ function onRoomUpdate(){
   renderMeetPoint();
   renderList();
   renderMarkers();
-  renderMemberLegend();
   checkReminderBanner();
   if(detailPlaceId) renderDetail();
 }
-function renderMemberLegend(){
-  const el = $('memberLegend');
-  if(!el) return;
-  const members = room.members ? Object.values(room.members) : [];
-  if(members.length < 2){ el.innerHTML=''; return; } // 혼자면 범례 불필요
-  el.innerHTML = members.map(m=>{
-    const c = colorForName(m.id || m.nickname);
-    return `<span class="ml-chip"><span class="ml-dot" style="background:${c}">${initials(m.nickname)}</span>${escapeHtml(m.nickname)}</span>`;
-  }).join('');
-}
+
 
 /* ================= member list ================= */
 function openMembers(){
@@ -2979,16 +2992,23 @@ async function findMidpoint(){
 
   // --- 3. 중심 주변의 '만나기 좋은 곳' 실제 검색 ---
   const radius = 3000;
-  const [subways, malls, depts] = await Promise.all([
-    kakaoCategorySearch('SW8', cLat, cLng, radius),                 // 지하철역
+  const [subways, malls, depts, marts, spots] = await Promise.all([
+    kakaoCategorySearch('SW8', cLat, cLng, radius),   // 지하철역
     kakaoKeywordSearch('복합쇼핑몰', cLat, cLng, radius),
-    kakaoKeywordSearch('백화점', cLat, cLng, radius)
+    kakaoKeywordSearch('백화점', cLat, cLng, radius),
+    kakaoCategorySearch('MT1', cLat, cLng, radius),   // 대형마트
+    kakaoCategorySearch('AT4', cLat, cLng, radius)    // 관광명소·랜드마크
   ]);
 
   const pool = [];
   const seen = new Set();
-  const push = (arr, type, weight)=>{
+  // 카테고리의 마지막 항목이 진짜 그 시설인지 확인 (건물 안 개별 매장 걸러내기)
+  const leafCat = (c)=> (c||'').split('>').pop().trim();
+  const push = (arr, type, weight, allowedLeaves)=>{
     arr.forEach(it=>{
+      const leaf = leafCat(it.category_name);
+      // '뮈뮈에르 현대백화점목동점' 같은 입점 매장 제외 — 카테고리 말단이 시설 자체여야 함
+      if(allowedLeaves && !allowedLeaves.some(x=> leaf.includes(x))) return;
       const key = it.place_name + '|' + it.x;
       if(seen.has(key)) return;
       seen.add(key);
@@ -3002,9 +3022,11 @@ async function findMidpoint(){
       });
     });
   };
-  push(subways, '지하철역', 1.0);
-  push(malls, '복합쇼핑몰', 0.82);
-  push(depts, '백화점', 0.78);
+  push(subways, '지하철역', 1.0, ['지하철']);
+  push(malls, '복합쇼핑몰', 0.82, ['쇼핑몰','복합쇼핑']);
+  push(depts, '백화점', 0.78, ['백화점']);
+  push(marts, '대형마트', 0.7, ['대형마트','마트']);
+  push(spots, '주요 장소', 0.75, ['관광','명소','공원','문화시설','전시']);
 
   if(pool.length === 0){
     $('midpointLoading').classList.add('hidden');
@@ -3050,7 +3072,9 @@ function renderMidpointResult(){
   const reasons = [];
   if(c.type === '지하철역') reasons.push(['🚇', '지하철역이라 어디서든 찾아오기 쉬워요']);
   else if(c.type === '복합쇼핑몰') reasons.push(['🛍️', '복합쇼핑몰이라 기다리기 좋고 눈에 잘 띄어요']);
-  else reasons.push(['🏬', '백화점이라 약속 장소로 찾기 쉬워요']);
+  else if(c.type === '백화점') reasons.push(['🏬', '백화점이라 약속 장소로 찾기 쉬워요']);
+  else if(c.type === '대형마트') reasons.push(['🛒', '대형마트라 위치를 설명하기 쉬워요']);
+  else reasons.push(['📍', '누구나 아는 장소라 만나기 좋아요']);
 
   reasons.push(['📏', `평균 ${c.avgD < 1 ? Math.round(c.avgD*1000)+'m' : c.avgD.toFixed(1)+'km'} 거리 · 가장 먼 사람도 ${c.maxD < 1 ? Math.round(c.maxD*1000)+'m' : c.maxD.toFixed(1)+'km'}`]);
 
@@ -3845,6 +3869,32 @@ $('detailEditBtn').addEventListener('click', ()=>{
 $('settingsCancel').addEventListener('click', closeSettings);
 $('settingsSave').addEventListener('click', saveSettings);
 $('midpointBtn').addEventListener('click', findMidpoint);
+$('meetChip').addEventListener('click', openMeetManage);
+$('meetManageClose').addEventListener('click', ()=> $('meetManageOverlay').classList.remove('show'));
+$('meetManageOverlay').addEventListener('click', (e)=>{ if(e.target.id==='meetManageOverlay') $('meetManageOverlay').classList.remove('show'); });
+$('meetGoBtn').addEventListener('click', ()=>{
+  const mp = room && room.meetPoint;
+  $('meetManageOverlay').classList.remove('show');
+  if(mp && map) map.morph(new naver.maps.LatLng(mp.lat, mp.lng), 16, { duration:800 });
+});
+$('meetChangeBtn').addEventListener('click', ()=>{
+  $('meetManageOverlay').classList.remove('show');
+  setTimeout(()=> findMidpoint(), 260);
+});
+$('meetClearBtn').addEventListener('click', ()=>{
+  if(!confirm('만나는 곳을 지울까요?')) return;
+  update(ref(db,'rooms/'+roomCode), { meetPoint: null })
+    .then(()=>{ showToast('만나는 곳을 지웠어요'); $('meetManageOverlay').classList.remove('show'); })
+    .catch(()=> showToast('지우지 못했어요 · 인터넷을 확인해 주세요'));
+});
+function openMeetManage(){
+  const mp = room && room.meetPoint;
+  if(!mp) return;
+  $('meetManageName').textContent = mp.name;
+  $('meetManageAddr').textContent = mp.addr || '';
+  $('meetManageSub').textContent = (mp.setBy ? mp.setBy+'님이 정했어요 · ' : '') + '다 같이 모이는 집합 장소예요';
+  $('meetManageOverlay').classList.add('show');
+}
 
 /* --- 메시지 액션 시트 --- */
 $('msgActionCancel').addEventListener('click', closeMsgActions);
@@ -3984,6 +4034,7 @@ function closeOverlayById(id){
     case 'chatOverlay':     closeChat(); return;
     case 'msgActionOverlay':closeMsgActions(); return;
     case 'reportOverlay':   $('reportOverlay').classList.remove('show'); reportCtx=null; return;
+    case 'meetManageOverlay': $('meetManageOverlay').classList.remove('show'); return;
     default: {
       const el = $(id);
       if(el) el.classList.remove('show');
