@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bijeong-map-v15';
+const CACHE_NAME = 'bijeong-map-v16';
 const APP_SHELL = [
   './index.html',
   './manifest.json',
@@ -24,7 +24,8 @@ self.addEventListener('activate', (event) => {
 
 // 절대 가로채면 안 되는 것들: Firebase 실시간 데이터, 실시간 검색(Nominatim), GPS 등
 function isLiveData(url) {
-  return url.includes('firebaseio.com') ||
+  return url.includes('admin.html') ||
+         url.includes('firebaseio.com') ||
          url.includes('firebasedatabase.app') ||
          url.includes('googleapis.com') ||
          url.includes('nominatim.openstreetmap.org') ||
