@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>관리자 · 어디가지?</title>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+  :root{
+    --bg:#0F0D1A; --card:#1A1730; --card2:#221E3D; --line:#2E2A4D;
+    --text:#EFEDF9; --soft:#A29DC4; --faint:#6E6A8F;
+    --accent:#7C6BF0; --accent2:#A99BF5; --danger:#FF6B6B; --ok:#37B24D; --warn:#F7931E;
+  }
+  *{ box-sizing:border-box; }
+  body{ margin:0; font-family:'Pretendard Variable',-apple-system,sans-serif; background:var(--bg); color:var(--text); line-height:1.6; }
+  .wrap{ max-width:900px; margin:0 auto; padding:24px 18px 70px; }
+  h1{ font-size:1.4rem; margin:0 0 2px; font-weight:800; }
+  .sub{ color:var(--soft); font-size:0.86rem; margin-bottom:22px; }
+
+  /* 로그인 */
+  .login-card{ max-width:380px; margin:14vh auto; background:var(--card); border:1px solid var(--line); border-radius:20px; padding:28px 24px; }
+  .field{ margin-bottom:14px; }
+  label{ display:block; font-size:0.8rem; font-weight:700; color:var(--soft); margin-bottom:6px; }
+  input{ width:100%; padding:13px 14px; border-radius:12px; border:1px solid var(--line); background:var(--card2); color:var(--text); font-family:inherit; font-size:0.92rem; outline:none; }
+  input:focus{ border-color:var(--accent); }
+  .btn{ width:100%; padding:14px; border:none; border-radius:12px; background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff; font-family:inherit; font-size:0.92rem; font-weight:800; cursor:pointer; transition:transform .12s; }
+  .btn:active{ transform:scale(.98); }
+  .btn.ghost{ background:var(--card2); color:var(--soft); border:1px solid var(--line); }
+  .btn.sm{ width:auto; padding:7px 13px; font-size:0.78rem; border-radius:10px; }
+  .btn.danger{ background:var(--danger); }
+  .err{ color:var(--danger); font-size:0.82rem; margin-top:10px; display:none; }
+
+  /* 탭 */
+  .tabs{ display:flex; gap:7px; margin-bottom:18px; flex-wrap:wrap; }
+  .tab{ padding:9px 15px; border-radius:12px; border:1px solid var(--line); background:var(--card); color:var(--soft); font-family:inherit; font-size:0.84rem; font-weight:700; cursor:pointer; }
+  .tab.on{ background:var(--accent); color:#fff; border-color:var(--accent); }
+  .tab .cnt{ display:inline-block; margin-left:5px; background:rgba(255,255,255,.18); padding:1px 7px; border-radius:8px; font-size:0.72rem; }
+
+  /* 통계 */
+  .stats{ display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:10px; margin-bottom:22px; }
+  .stat{ background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px; }
+  .stat .n{ font-size:1.5rem; font-weight:800; }
+  .stat .l{ font-size:0.76rem; color:var(--soft); }
+
+  /* 목록 */
+  .item{ background:var(--card); border:1px solid var(--line); border-radius:16px; padding:15px 16px; margin-bottom:10px; }
+  .item.flag{ border-left:3px solid var(--danger); }
+  .row{ display:flex; align-items:center; gap:9px; flex-wrap:wrap; margin-bottom:7px; }
+  .badge{ font-size:0.7rem; font-weight:800; padding:3px 9px; border-radius:8px; background:var(--card2); color:var(--accent2); }
+  .badge.red{ background:rgba(255,107,107,.16); color:var(--danger); }
+  .badge.grn{ background:rgba(55,178,77,.16); color:var(--ok); }
+  .when{ font-size:0.74rem; color:var(--faint); margin-left:auto; }
+  .content{ background:var(--card2); border-radius:11px; padding:11px 13px; font-size:0.86rem; margin:8px 0; word-break:break-all; }
+  .meta{ font-size:0.78rem; color:var(--soft); }
+  .acts{ display:flex; gap:7px; margin-top:11px; flex-wrap:wrap; }
+  .empty{ text-align:center; padding:50px 20px; color:var(--faint); }
+  .empty .big{ font-size:2.4rem; display:block; margin-bottom:10px; }
+  .hidden{ display:none !important; }
+  .load{ text-align:center; padding:40px; color:var(--soft); }
+  .topbar{ display:flex; align-items:center; margin-bottom:20px; }
+  .topbar .btn{ width:auto; padding:8px 14px; font-size:0.8rem; }
+</style>
+</head>
+<body>
+
+<!-- 로그인 -->
+<div id="loginView">
+  <div class="login-card">
+    <h1>🔐 관리자</h1>
+    <div class="sub">어디가지? 운영 도구</div>
+    <div class="field">
+      <label>이메일</label>
+      <input id="admEmail" type="email" placeholder="관리자 이메일" autocomplete="email">
+    </div>
+    <div class="field">
+      <label>비밀번호</label>
+      <input id="admPw" type="password" placeholder="비밀번호" autocomplete="current-password">
+    </div>
+    <button class="btn" id="admLoginBtn">로그인</button>
+    <div class="err" id="admErr"></div>
+  </div>
+</div>
+
+<!-- 대시보드 -->
+<div id="dashView" class="hidden">
+  <div class="wrap">
+    <div class="topbar">
+      <div>
+        <h1>어디가지? 관리자</h1>
+        <div class="sub" id="admWho" style="margin:0;"></div>
+      </div>
+      <button class="btn ghost" id="admLogout" style="margin-left:auto;">로그아웃</button>
+    </div>
+
+    <div class="stats" id="statsBox"></div>
+
+    <div class="tabs">
+      <button class="tab on" data-tab="reports">🚩 신고<span class="cnt" id="cReports">0</span></button>
+      <button class="tab" data-tab="feedback">💬 피드백<span class="cnt" id="cFeedback">0</span></button>
+    </div>
+
+    <div id="tabReports"></div>
+    <div id="tabFeedback" class="hidden"></div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getDatabase, ref, get, child, remove, update }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+const ADMIN_UID = "bOSqQUDffHPetfLQ15QXqeooXkg2";
+
+const app = initializeApp({
+  apiKey: "AIzaSyD0T7uDapkuRHmxE1s3Dz9QTo2lbp2xlsA",
+  authDomain: "sharewithu-ahnth.firebaseapp.com",
+  databaseURL: "https://sharewithu-ahnth-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "sharewithu-ahnth",
+  storageBucket: "sharewithu-ahnth.firebasestorage.app",
+  messagingSenderId: "733826149248",
+  appId: "1:733826149248:web:c1b5dc8d7af6202fd52f65"
+});
+const auth = getAuth(app);
+const db = getDatabase(app);
+const $ = id => document.getElementById(id);
+const esc = s => String(s??'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+function when(ts){
+  if(!ts) return '';
+  const d = new Date(ts), diff = (Date.now()-ts)/1000;
+  if(diff < 60) return '방금';
+  if(diff < 3600) return Math.floor(diff/60)+'분 전';
+  if(diff < 86400) return Math.floor(diff/3600)+'시간 전';
+  return d.toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+}
+
+/* ---------- 로그인 ---------- */
+$('admLoginBtn').addEventListener('click', doLogin);
+$('admPw').addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
+async function doLogin(){
+  const email = $('admEmail').value.trim(), pw = $('admPw').value;
+  const err = $('admErr');
+  err.style.display='none';
+  if(!email || !pw){ err.textContent='이메일과 비밀번호를 입력해 주세요'; err.style.display='block'; return; }
+  $('admLoginBtn').textContent='확인 중...';
+  try{
+    const cred = await signInWithEmailAndPassword(auth, email, pw);
+    if(cred.user.uid !== ADMIN_UID){
+      await signOut(auth);
+      err.textContent='관리자 권한이 없는 계정이에요';
+      err.style.display='block';
+    }
+  }catch(e){
+    console.error(e);
+    err.textContent = (e.code==='auth/invalid-credential' || e.code==='auth/user-not-found')
+      ? '이메일 또는 비밀번호가 맞지 않아요' : '로그인하지 못했어요';
+    err.style.display='block';
+  }
+  $('admLoginBtn').textContent='로그인';
+}
+$('admLogout').addEventListener('click', ()=> signOut(auth));
+
+onAuthStateChanged(auth, user=>{
+  const ok = user && user.uid === ADMIN_UID;
+  $('loginView').classList.toggle('hidden', ok);
+  $('dashView').classList.toggle('hidden', !ok);
+  if(ok){
+    $('admWho').textContent = user.email;
+    loadAll();
+  }
+});
+
+/* ---------- 탭 ---------- */
+document.querySelectorAll('.tab').forEach(t=>{
+  t.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
+    t.classList.add('on');
+    ['reports','feedback'].forEach(k=>{
+      $('tab'+k.charAt(0).toUpperCase()+k.slice(1)).classList.toggle('hidden', k !== t.dataset.tab);
+    });
+  });
+});
+
+/* ---------- 데이터 로드 ---------- */
+let reports = [], feedback = [];
+async function loadAll(){
+  $('tabReports').innerHTML = '<div class="load">불러오는 중...</div>';
+  $('tabFeedback').innerHTML = '<div class="load">불러오는 중...</div>';
+  await Promise.all([loadReports(), loadFeedback(), loadStats()]);
+}
+
+async function loadReports(){
+  try{
+    const snap = await get(child(ref(db), 'reports'));
+    reports = snap.exists() ? Object.entries(snap.val()).map(([k,v])=>({key:k,...v})) : [];
+    reports.sort((a,b)=> (b.ts||0)-(a.ts||0));
+  }catch(e){ console.error(e); reports = []; }
+  $('cReports').textContent = reports.filter(r=>!r.handled).length;
+  renderReports();
+}
+function renderReports(){
+  const box = $('tabReports');
+  if(reports.length === 0){
+    box.innerHTML = '<div class="empty"><span class="big">✅</span>접수된 신고가 없어요</div>';
+    return;
+  }
+  box.innerHTML = reports.map(r=>`
+    <div class="item ${r.handled?'':'flag'}">
+      <div class="row">
+        <span class="badge red">${esc(r.reason||'기타')}</span>
+        <span class="badge">${r.kind==='message'?'채팅':'후보 장소'}</span>
+        ${r.handled?'<span class="badge grn">처리됨</span>':''}
+        <span class="when">${when(r.ts)}</span>
+      </div>
+      <div class="content">${esc(r.content||'(내용 없음)')}</div>
+      <div class="meta">
+        작성자: <b>${esc(r.targetAuthorId||'-')}</b><br>
+        신고자: ${esc(r.reporterNickname||'-')} · 방 코드: ${esc(r.roomCode||'-')}
+      </div>
+      <div class="acts">
+        ${r.kind==='message' && r.roomCode && r.targetId
+          ? `<button class="btn sm danger" data-del-msg="${esc(r.roomCode)}|${esc(r.targetId)}|${esc(r.key)}">메시지 삭제</button>` : ''}
+        ${r.kind==='place' && r.roomCode && r.targetId
+          ? `<button class="btn sm danger" data-del-place="${esc(r.roomCode)}|${esc(r.targetId)}|${esc(r.key)}">후보 삭제</button>` : ''}
+        ${!r.handled ? `<button class="btn sm ghost" data-handled="${esc(r.key)}">처리 완료</button>` : ''}
+        <button class="btn sm ghost" data-del-report="${esc(r.key)}">신고 기록 삭제</button>
+      </div>
+    </div>`).join('');
+  bindReportActions();
+}
+function bindReportActions(){
+  document.querySelectorAll('[data-del-msg]').forEach(b=>{
+    b.addEventListener('click', async ()=>{
+      const [rc, mid, key] = b.dataset.delMsg.split('|');
+      if(!confirm('이 메시지를 삭제할까요?')) return;
+      try{
+        await remove(ref(db,'rooms/'+rc+'/messages/'+mid));
+        await update(ref(db,'reports/'+key), { handled:true, handledAt:Date.now() });
+        alert('메시지를 삭제했습니다'); loadReports();
+      }catch(e){ alert('삭제 실패: '+e.message); }
+    });
+  });
+  document.querySelectorAll('[data-del-place]').forEach(b=>{
+    b.addEventListener('click', async ()=>{
+      const [rc, pid, key] = b.dataset.delPlace.split('|');
+      if(!confirm('이 후보 장소를 삭제할까요?')) return;
+      try{
+        await remove(ref(db,'rooms/'+rc+'/places/'+pid));
+        await update(ref(db,'reports/'+key), { handled:true, handledAt:Date.now() });
+        alert('후보를 삭제했습니다'); loadReports();
+      }catch(e){ alert('삭제 실패: '+e.message); }
+    });
+  });
+  document.querySelectorAll('[data-handled]').forEach(b=>{
+    b.addEventListener('click', async ()=>{
+      try{
+        await update(ref(db,'reports/'+b.dataset.handled), { handled:true, handledAt:Date.now() });
+        loadReports();
+      }catch(e){ alert('실패: '+e.message); }
+    });
+  });
+  document.querySelectorAll('[data-del-report]').forEach(b=>{
+    b.addEventListener('click', async ()=>{
+      if(!confirm('이 신고 기록을 삭제할까요?')) return;
+      try{ await remove(ref(db,'reports/'+b.dataset.delReport)); loadReports(); }
+      catch(e){ alert('실패: '+e.message); }
+    });
+  });
+}
+
+async function loadFeedback(){
+  try{
+    const snap = await get(child(ref(db), 'feedback'));
+    feedback = snap.exists() ? Object.entries(snap.val()).map(([k,v])=>({key:k,...v})) : [];
+    feedback.sort((a,b)=> (b.ts||0)-(a.ts||0));
+  }catch(e){ console.error(e); feedback = []; }
+  $('cFeedback').textContent = feedback.length;
+  const box = $('tabFeedback');
+  box.innerHTML = feedback.length
+    ? feedback.map(f=>`
+      <div class="item">
+        <div class="row">
+          <span class="badge">💬 피드백</span>
+          <span class="when">${when(f.ts)}</span>
+        </div>
+        <div class="content">${esc(f.text || f.message || '(내용 없음)')}</div>
+        <div class="meta">보낸 사람: ${esc(f.nickname || f.author || '익명')}</div>
+        <div class="acts"><button class="btn sm ghost" data-del-fb="${esc(f.key)}">삭제</button></div>
+      </div>`).join('')
+    : '<div class="empty"><span class="big">📭</span>받은 피드백이 없어요</div>';
+  box.querySelectorAll('[data-del-fb]').forEach(b=>{
+    b.addEventListener('click', async ()=>{
+      if(!confirm('이 피드백을 삭제할까요?')) return;
+      try{ await remove(ref(db,'feedback/'+b.dataset.delFb)); loadFeedback(); }
+      catch(e){ alert('실패: '+e.message); }
+    });
+  });
+}
+
+async function loadStats(){
+  let users = 0, rooms = 0, places = 0, msgs = 0;
+  try{
+    const u = await get(child(ref(db),'users'));
+    if(u.exists()) users = Object.keys(u.val()).length;
+  }catch(e){}
+  try{
+    const r = await get(child(ref(db),'rooms'));
+    if(r.exists()){
+      const all = Object.values(r.val());
+      rooms = all.length;
+      all.forEach(x=>{
+        places += x.places ? Object.keys(x.places).length : 0;
+        msgs   += x.messages ? Object.keys(x.messages).length : 0;
+      });
+    }
+  }catch(e){}
+  const pend = reports.filter(x=>!x.handled).length;
+  $('statsBox').innerHTML = `
+    <div class="stat"><div class="n">${users}</div><div class="l">가입자</div></div>
+    <div class="stat"><div class="n">${rooms}</div><div class="l">모임</div></div>
+    <div class="stat"><div class="n">${places}</div><div class="l">후보 장소</div></div>
+    <div class="stat"><div class="n">${msgs}</div><div class="l">메시지</div></div>
+    <div class="stat"><div class="n" style="color:${pend?'var(--danger)':'var(--ok)'}">${pend}</div><div class="l">미처리 신고</div></div>`;
+}
+</script>
+</body>
+</html>
