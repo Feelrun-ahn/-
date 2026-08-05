@@ -138,15 +138,32 @@
   /* 내 모임 홈 - 중앙 카드 대신 화면 전체를 채우는 레이아웃 */
   #homeScreen{ padding:0; align-items:stretch; justify-content:flex-start; overflow-y:hidden; }
   .home-wrap{ display:flex; flex-direction:column; height:100%; width:100%; position:relative; z-index:1; }
-  .home-header{ padding:22px 22px 8px; flex-shrink:0; display:flex; align-items:center; justify-content:space-between; }
+  .home-header{
+    position:absolute; top:0; left:0; right:0; z-index:5;
+    padding:22px 22px 18px; display:flex; align-items:center; justify-content:space-between;
+    background:linear-gradient(to bottom, var(--bg2) 30%, transparent);
+    backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+    -webkit-mask-image:linear-gradient(to bottom, black 62%, transparent);
+    mask-image:linear-gradient(to bottom, black 62%, transparent);
+    pointer-events:none;
+  }
+  .home-header > *{ pointer-events:auto; }
   .home-eyebrow{ margin:0 0 2px; font-size:0.84rem; font-weight:600; color:var(--text-soft); }
   .home-eyebrow.tw-cursor::after{ content:''; display:inline-block; width:2px; height:0.9em; margin-left:2px; background:var(--accent); vertical-align:-2px; animation:twBlink 0.8s step-end infinite; }
   @keyframes twBlink{ 50%{ opacity:0; } }
   .home-title{ margin:0; font-size:1.65rem; font-weight:800; color:var(--text); letter-spacing:-0.3px; }
-  .home-list{ flex:1; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:12px 22px 20px; display:flex; flex-direction:column; }
+  .home-list{
+    flex:1; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch;
+    padding:108px 22px calc(110px + env(safe-area-inset-bottom));
+    display:flex; flex-direction:column;
+  }
   .home-footer{
-    flex-shrink:0; padding:14px 22px calc(18px + env(safe-area-inset-bottom));
-    background:linear-gradient(to top, var(--bg2) 55%, transparent);
+    position:absolute; bottom:0; left:0; right:0; z-index:5;
+    padding:26px 22px calc(18px + env(safe-area-inset-bottom));
+    background:linear-gradient(to top, var(--bg2) 40%, transparent);
+    backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+    -webkit-mask-image:linear-gradient(to top, black 68%, transparent);
+    mask-image:linear-gradient(to top, black 68%, transparent);
     display:flex; gap:10px;
   }
   .home-btn{ height:54px; border-radius:18px; font-size:0.92rem; font-weight:700; font-family:inherit; cursor:pointer; transition:transform 0.12s ease; }
@@ -162,6 +179,22 @@
   }
 
   /* ===== room card (rich, matches reference) ===== */
+  /* ===== 스켈레톤 로딩 ===== */
+  .skel{ position:relative; overflow:hidden; background:var(--line); border-radius:8px; color:transparent !important; }
+  .skel::after{
+    content:''; position:absolute; inset:0;
+    background:linear-gradient(90deg, transparent, rgba(255,255,255,0.55), transparent);
+    animation:skelShine 1.3s infinite;
+  }
+  @keyframes skelShine{ 0%{ transform:translateX(-100%);} 100%{ transform:translateX(100%);} }
+  html[data-theme="dark"] .skel::after{ background:linear-gradient(90deg, transparent, rgba(255,255,255,0.09), transparent); }
+
+  .past-menu-hint{
+    margin-top:6px; padding:13px 16px; border:none; border-radius:16px;
+    background:var(--line); color:var(--text-soft); font-size:0.8rem; font-weight:700;
+    font-family:inherit; cursor:pointer; text-align:center; width:100%;
+  }
+  .past-menu-hint:active{ background:var(--accent-soft); color:var(--accent); }
   .past-section-title{ margin:26px 0 12px; font-size:0.8rem; font-weight:800; color:var(--text-soft); letter-spacing:-0.01em; display:flex; align-items:center; gap:7px; }
   .past-section-title span{ background:var(--line); color:var(--text-soft); font-size:0.7rem; padding:2px 8px; border-radius:9px; }
   .past-card{ display:flex; align-items:center; gap:14px; padding:12px; margin-bottom:10px; border-radius:20px; background:var(--surface); border:1px solid var(--border); cursor:pointer; transition:transform 0.12s ease; }
@@ -457,6 +490,21 @@
   .locate-btn{ width:38px; height:38px; border-radius:11px; border:1px solid var(--border); background:var(--surface-strong); backdrop-filter:blur(var(--blur)); -webkit-backdrop-filter:blur(var(--blur)); box-shadow:0 2px 6px rgba(23,25,35,0.08); font-size:1.1rem; cursor:pointer; display:flex; align-items:center; justify-content:center; }
   .locate-btn:active{ background:var(--accent-soft); }
 
+  .member-legend{
+    position:absolute; left:50%; transform:translateX(-50%); bottom:10px; z-index:9;
+    display:flex; gap:6px; max-width:86%; overflow-x:auto; padding:4px;
+    -webkit-overflow-scrolling:touch; scrollbar-width:none;
+  }
+  .member-legend::-webkit-scrollbar{ display:none; }
+  .member-legend:empty{ display:none; }
+  .ml-chip{
+    flex:none; display:flex; align-items:center; gap:5px;
+    background:var(--surface-strong); backdrop-filter:blur(var(--blur)); -webkit-backdrop-filter:blur(var(--blur));
+    border:1px solid var(--border); border-radius:20px; padding:4px 10px 4px 5px;
+    font-size:0.7rem; font-weight:700; color:var(--text); box-shadow:0 2px 8px rgba(23,25,35,0.1);
+    white-space:nowrap;
+  }
+  .ml-dot{ width:16px; height:16px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; font-size:0.55rem; font-weight:800; }
   .search-wrap{ position:absolute; top:12px; left:12px; right:12px; z-index:10; display:flex; flex-direction:column; align-items:flex-start; }
   .search-wrap .search-results{ width:100%; align-self:stretch; }
   .search-bar{
@@ -491,6 +539,8 @@
   .pin span{ transform:rotate(45deg); color:#fff; font-size:13px; font-weight:700; }
   .temp-marker-dot{ width:22px; height:22px; border-radius:50%; background:rgba(91,91,214,0.22); border:3px solid #5B5BD6; box-sizing:border-box; }
   .my-loc-dot{ width:16px; height:16px; border-radius:50%; background:#2F80ED; border:3px solid #fff; box-shadow:0 1px 4px rgba(0,0,0,0.3); box-sizing:border-box; }
+  .midpoint-pin{ width:40px; height:40px; border-radius:50%; background:var(--surface-strong); border:2.5px solid var(--accent); display:flex; align-items:center; justify-content:center; font-size:1.15rem; box-shadow:0 6px 18px rgba(91,91,214,0.4); animation:mpPop 0.4s cubic-bezier(0.34,1.56,0.64,1); }
+  @keyframes mpPop{ from{ transform:scale(0);} to{ transform:scale(1);} }
   .naver-iw{ border-radius:15px; box-shadow:var(--shadow-lg); background:var(--sheet-bg); backdrop-filter:blur(var(--blur)); -webkit-backdrop-filter:blur(var(--blur)); color:var(--text); padding:12px 14px; max-width:220px; border:1px solid var(--border); }
   .pop-name{ font-weight:700; font-size:0.92rem; margin-bottom:3px; }
   .pop-memo{ font-size:0.8rem; color:var(--text-soft); margin-bottom:4px; }
@@ -503,7 +553,13 @@
   .panel-grip:active{ cursor:grabbing; }
   .panel-grip::before{ content:""; width:38px; height:5px; background:#D4D8E0; border-radius:3px; transition:background 0.2s; }
   .panel-grip:active::before{ background:var(--accent); }
-  .panel-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+  .panel-head{ display:flex; align-items:center; gap:9px; margin-bottom:8px; }
+  .panel-head h2{ margin-right:auto; }
+  .midpoint-btn{
+    border:none; border-radius:12px; padding:7px 12px; font-size:0.76rem; font-weight:800;
+    background:var(--accent-soft); color:var(--accent); cursor:pointer; transition:transform 0.12s;
+  }
+  .midpoint-btn:active{ transform:scale(0.95); }
   .panel-head h2{ font-size:1rem; margin:0; font-weight:800; }
   .panel-head .count{ font-size:0.72rem; color:var(--accent); font-weight:700; background:var(--accent-soft); padding:3px 10px; border-radius:20px; }
 
@@ -712,7 +768,7 @@
         <label>아이디</label>
         <div class="icon-input">
           <span class="ii-icon">👤</span>
-          <input id="loginId" type="text" placeholder="아이디를 입력하세요" maxlength="20" autocomplete="username">
+          <input id="loginId" type="text" placeholder="아이디 또는 이메일" maxlength="60" autocomplete="username">
         </div>
       </div>
       <div class="field">
@@ -724,8 +780,10 @@
       </div>
       <div class="err" id="loginErr">아이디와 비밀번호를 확인해 주세요!</div>
 
-      <div style="text-align:center; margin-top:8px;">
+      <div style="display:flex; align-items:center; justify-content:center; gap:16px; margin-top:8px;">
         <button class="back-link" id="goSignup" style="padding:0;">회원가입</button>
+        <span style="width:1px; height:12px; background:var(--line);"></span>
+        <button class="back-link" id="resetPwBtn" style="padding:0;">비밀번호 찾기</button>
       </div>
 
       <div class="or-divider"><span>또는</span></div>
@@ -733,6 +791,11 @@
         <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 3l6-6C34 5.1 29.3 3 24 3 12.4 3 3 12.4 3 24s9.4 21 21 21 21-9.4 21-21c0-1.4-.1-2.7-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 15.9 18.9 13 24 13c3.1 0 5.8 1.1 8 3l6-6C34 5.1 29.3 3 24 3c-7.7 0-14.3 4.3-17.7 10.7z"/><path fill="#4CAF50" d="M24 45c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 36.2 26.7 37 24 37c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.6 40.6 16.3 45 24 45z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.2 4.2-4.1 5.6l6.2 5.2C40.5 36 44 30.5 44 24c0-1.4-.1-2.7-.4-3.5z"/></svg>
         <span>Google로 계속하기</span>
       </button>
+      <div id="guestJoinBox" class="hidden" style="margin-top:14px;">
+        <div class="or-divider"><span>초대받으셨나요?</span></div>
+        <div class="field"><input id="guestNickname" type="text" placeholder="닉네임만 입력하면 바로 입장!" maxlength="10"></div>
+        <button class="big-btn" id="guestJoinBtn" type="button" style="background:var(--surface); color:var(--accent); border:1.5px solid var(--accent);">👋 가입 없이 둘러보기</button>
+      </div>
       <div style="text-align:center;"><button class="ob-skip" id="introReplayOb" style="margin-top:14px;">앱 소개 다시 보기</button></div>
     </div>
     <div class="login-footer">
@@ -748,6 +811,10 @@
     <div class="field">
       <label>아이디</label>
       <input id="signupId" type="text" placeholder="영문/숫자 아이디" maxlength="20" autocomplete="username">
+    </div>
+    <div class="field">
+      <label>이메일 (비밀번호를 잊었을 때 필요해요)</label>
+      <input id="signupEmail" type="email" placeholder="example@email.com" maxlength="60" autocomplete="email">
     </div>
     <div class="field">
       <label>닉네임 (다른 사람에게 보여질 이름)</label>
@@ -911,6 +978,7 @@
 
   <div class="map-wrap">
     <div id="map"></div>
+    <div class="member-legend" id="memberLegend"></div>
     <div class="search-wrap collapsed" id="searchWrap">
       <div class="search-bar" id="searchBar">
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
@@ -926,6 +994,7 @@
     <div class="panel-head">
       <h2>후보 장소</h2>
       <span class="count" id="countLabel">0곳</span>
+      <button class="midpoint-btn" id="midpointBtn" title="중간지점 찾기">🧭 중간지점</button>
     </div>
     <div id="placeList"></div>
   </div>
@@ -966,6 +1035,10 @@
     <p class="sub" id="settingsSub">방장만 바꿀 수 있어요</p>
 
     <div id="hostSettings">
+      <div class="field-row" style="display:flex; gap:10px;">
+        <div class="field" style="width:76px; flex:none;"><label>아이콘</label><input id="editRoomEmoji" type="text" maxlength="4" style="text-align:center; font-size:1.3rem;"></div>
+        <div class="field" style="flex:1;"><label>모임 이름</label><input id="editRoomName" type="text" maxlength="20"></div>
+      </div>
       <div class="field"><label>약속 날짜</label><input id="meetDateInput" type="date"></div>
       <div class="toggle-row">
         <div><div class="tr-label">시간도 정하기</div><div class="tr-desc">끄면 날짜만 표시됩니다</div></div>
@@ -1062,7 +1135,10 @@
     <div id="detailHostActions" class="hidden" style="margin-top:12px; display:flex; gap:10px;">
       <button class="btn btn-save" id="detailConfirmBtn" style="flex:1;">✅ 이곳으로 확정</button>
     </div>
-    <button class="mini-link del" id="detailDeleteBtn" style="display:block; margin:14px auto 0;">이 후보 삭제</button>
+    <div style="display:flex; align-items:center; justify-content:center; gap:18px; margin-top:14px;">
+      <button class="mini-link confirm hidden" id="detailEditBtn">✏️ 메모 수정</button>
+      <button class="mini-link del hidden" id="detailDeleteBtn">이 후보 삭제</button>
+    </div>
   </div>
 </div>
 
@@ -1095,6 +1171,11 @@
         </div>
         <label class="switch"><input type="checkbox" id="notifySwitch"><span class="slider"></span></label>
       </div>
+      <button class="drawer-item" id="menuPastBtn">
+        <span class="dr-icon">📚</span>
+        <span class="dr-label" style="flex:1; text-align:left;">지난 모임 <span id="menuPastCount" style="color:var(--faint); font-weight:500;"></span></span>
+        <span style="color:var(--faint);">›</span>
+      </button>
       <button class="drawer-item" id="menuNicknameBtn">
         <span class="dr-icon">✏️</span>
         <span class="dr-label" style="flex:1; text-align:left;">닉네임 변경</span>
@@ -1185,6 +1266,15 @@
 </div>
 
 <!-- ============ 위치 공유 동의 ============ -->
+<div class="overlay" id="pastOverlay">
+  <div class="sheet">
+    <div class="sheet-grip"></div>
+    <h3>📚 지난 모임</h3>
+    <p class="sub">함께했던 순간들이에요</p>
+    <div id="pastListBox" style="max-height:56vh; overflow-y:auto; -webkit-overflow-scrolling:touch;"></div>
+  </div>
+</div>
+
 <div class="overlay" id="locShareOverlay">
   <div class="sheet">
     <div class="sheet-grip"></div>
@@ -1212,8 +1302,8 @@
 
 // Firebase는 아래에서 동적으로 로드 (로드 실패해도 UI는 멈추지 않음)
 let initializeApp, getDatabase, ref, onValue, set, update, remove, get, child, onDisconnect;
-let getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile;
-let GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult;
+let getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile, sendPasswordResetEmail;
+let GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signInAnonymously;
 let fbApp, db, auth;
 let fbReady = false;
 let authReadyPromise = null;
@@ -1235,8 +1325,8 @@ async function loadFirebase(){
     const authMod = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js");
     initializeApp = appMod.initializeApp;
     ({ getDatabase, ref, onValue, set, update, remove, get, child, onDisconnect } = dbMod);
-    ({ getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile } = authMod);
-    ({ GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult } = authMod);
+    ({ getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile, sendPasswordResetEmail } = authMod);
+    ({ GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signInAnonymously } = authMod);
     fbApp = initializeApp(firebaseConfig);
     db = getDatabase(fbApp);
     auth = getAuth(fbApp);
@@ -1332,6 +1422,7 @@ function toggleTheme(){ applyTheme(getTheme()==='dark' ? 'light' : 'dark'); }
    비밀번호는 Firebase 서버에서만 확인하고, 우리 코드나 데이터베이스에는
    저장되지도, 지나가지도 않아 — 지금까지 중 제일 안전한 방식이야. */
 function idToEmail(id){ return safeKey(id).toLowerCase() + '@eodigaji.app'; }
+function isEmailFormat(s){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s); }
 
 function loadSession(){
   try{ return JSON.parse(localStorage.getItem(LS_SESSION) || 'null'); }catch(e){ return null; }
@@ -1341,26 +1432,42 @@ function saveSession(id, nickname){
 }
 function clearSession(){ try{ localStorage.removeItem(LS_SESSION); }catch(e){} }
 
-async function signUp(id, pw, nickname){
-  if(!fbReady){ const ok = await loadFirebase(); if(!ok) return { ok:false, msg:'서버 연결하지 못했어요 · 인터넷을 확인해 주세요' }; }
+async function signUp(id, email, pw, nickname){
+  if(!fbReady){ const ok = await loadFirebase(); if(!ok) return { ok:false, msg:'서버에 연결하지 못했어요 · 인터넷을 확인해 주세요' }; }
   if(!/^[a-zA-Z0-9_]{3,20}$/.test(id)){ return { ok:false, msg:'아이디는 영문/숫자/밑줄로 3~20자여야 해요' }; }
+  if(!isEmailFormat(email)){ return { ok:false, msg:'이메일 형식을 확인해 주세요' }; }
   try{
-    const cred = await createUserWithEmailAndPassword(auth, idToEmail(id), pw);
+    // 아이디 중복 확인 (이메일이 로그인 키가 되므로 아이디는 따로 검사)
+    const dupSnap = await get(child(ref(db), 'usernames/'+safeKey(id).toLowerCase()));
+    if(dupSnap.exists()) return { ok:false, msg:'이미 사용 중인 아이디예요 · 다른 아이디를 써주세요' };
+    const cred = await createUserWithEmailAndPassword(auth, email, pw);
     try{ await updateProfile(cred.user, { displayName: nickname }); }catch(e){}
-    await set(ref(db, 'users/'+cred.user.uid), { id, nickname, provider:'password', createdAt:Date.now() });
+    await set(ref(db, 'users/'+cred.user.uid), { id, email, nickname, provider:'password', createdAt:Date.now() });
+    try{ await set(ref(db, 'usernames/'+safeKey(id).toLowerCase()), { uid:cred.user.uid, email }); }catch(e){}
     return { ok:true, uid:cred.user.uid, nickname };
   }catch(e){
     console.error(e);
-    if(e.code === 'auth/email-already-in-use') return { ok:false, msg:'이미 있는 아이디야. 다른 아이디를 써줘' };
+    if(e.code === 'auth/email-already-in-use') return { ok:false, msg:'이미 가입된 이메일이에요 · 로그인해 주세요' };
     if(e.code === 'auth/weak-password') return { ok:false, msg:'비밀번호는 6자 이상으로 입력해 주세요' };
+    if(e.code === 'auth/invalid-email') return { ok:false, msg:'이메일 형식을 확인해 주세요' };
     return { ok:false, msg:'가입하지 못했어요 · 다시 시도해 주세요' };
   }
 }
-async function logIn(id, pw){
-  if(!fbReady){ const ok = await loadFirebase(); if(!ok) return { ok:false, msg:'서버 연결하지 못했어요 · 인터넷을 확인해 주세요' }; }
+async function resolveLoginEmail(idOrEmail){
+  // 이메일이면 그대로, 아이디면 usernames 매핑 → 없으면 예전 가짜 이메일 방식(레거시 계정)
+  if(isEmailFormat(idOrEmail)) return idOrEmail;
   try{
-    const cred = await signInWithEmailAndPassword(auth, idToEmail(id), pw);
-    let nickname = cred.user.displayName || id;
+    const snap = await get(child(ref(db), 'usernames/'+safeKey(idOrEmail).toLowerCase()));
+    if(snap.exists() && snap.val().email) return snap.val().email;
+  }catch(e){}
+  return idToEmail(idOrEmail); // 레거시 계정 호환
+}
+async function logIn(idOrEmail, pw){
+  if(!fbReady){ const ok = await loadFirebase(); if(!ok) return { ok:false, msg:'서버에 연결하지 못했어요 · 인터넷을 확인해 주세요' }; }
+  try{
+    const email = await resolveLoginEmail(idOrEmail.trim());
+    const cred = await signInWithEmailAndPassword(auth, email, pw);
+    let nickname = cred.user.displayName || idOrEmail;
     try{
       const snap = await get(child(ref(db), 'users/'+cred.user.uid));
       if(snap.exists() && snap.val().nickname) nickname = snap.val().nickname;
@@ -1368,10 +1475,27 @@ async function logIn(id, pw){
     return { ok:true, uid:cred.user.uid, nickname };
   }catch(e){
     console.error(e);
-    if(e.code === 'auth/user-not-found' || e.code === 'auth/invalid-credential') return { ok:false, msg:'아이디 또는 비밀번호가 틀렸어' };
-    if(e.code === 'auth/wrong-password') return { ok:false, msg:'비밀번호가 일치하지 않아' };
+    if(e.code === 'auth/user-not-found' || e.code === 'auth/invalid-credential') return { ok:false, msg:'아이디(또는 이메일)나 비밀번호가 맞지 않아요' };
+    if(e.code === 'auth/wrong-password') return { ok:false, msg:'비밀번호가 일치하지 않아요' };
     if(e.code === 'auth/too-many-requests') return { ok:false, msg:'시도가 너무 많았어요 · 잠시 후 다시 해주세요' };
     return { ok:false, msg:'로그인하지 못했어요 · 다시 시도해 주세요' };
+  }
+}
+async function requestPasswordReset(idOrEmail){
+  if(!fbReady){ const ok = await loadFirebase(); if(!ok){ showToast('서버에 연결하지 못했어요'); return; } }
+  const raw = (idOrEmail||'').trim();
+  if(!raw){ showToast('아이디 또는 이메일을 먼저 입력해 주세요'); return; }
+  try{
+    const email = await resolveLoginEmail(raw);
+    if(email.endsWith('@eodigaji.app')){
+      showToast('이메일이 등록되지 않은 계정이에요 · 재설정을 지원하지 않아요');
+      return;
+    }
+    await sendPasswordResetEmail(auth, email);
+    showToast('비밀번호 재설정 메일을 보냈어요 · 메일함을 확인해 주세요 📮');
+  }catch(e){
+    console.error(e);
+    showToast('재설정 메일을 보내지 못했어요 · 입력값을 확인해 주세요');
   }
 }
 function applySession(id, nickname){
@@ -1436,7 +1560,58 @@ function showScreen(idOrNull){
   $('app').classList.remove('active');
   if(idOrNull === 'app'){ $('app').classList.add('active'); }
   else if(idOrNull){ $(idOrNull).classList.remove('hidden'); }
+  currentScreen = idOrNull;
 }
+
+/* ================= 뒤로가기(안드로이드/브라우저) 처리 ================= */
+let currentScreen = null;
+const OPEN_SHEET_IDS = ['addOverlay','settingsOverlay','shareOverlay','membersOverlay','detailOverlay','nicknameOverlay','feedbackOverlay','weatherOverlay','chatOverlay','locShareOverlay','pastOverlay','menuOverlay'];
+function anyOpenSheet(){
+  return OPEN_SHEET_IDS.find(id=>{ const el=$(id); return el && el.classList.contains('show'); }) || null;
+}
+function closeSheetById(id){
+  if(id==='menuOverlay'){ closeAccountMenu(); return; }
+  if(id==='addOverlay'){ closeAdd(); return; }
+  if(id==='detailOverlay'){ closeDetail(); return; }
+  if(id==='settingsOverlay'){ closeSettings(); return; }
+  const el=$(id); if(el) el.classList.remove('show');
+}
+// 히스토리에 상태를 한 칸 쌓아두고, 뒤로가기가 눌리면 그 한 칸을 소비해 시트/화면을 닫는다
+function pushBackState(){
+  try{ history.pushState({eodigaji:true, t:Date.now()}, ''); }catch(e){}
+}
+window.addEventListener('popstate', ()=>{
+  // 1) 열려있는 시트가 있으면 그것부터 닫기
+  const sheet = anyOpenSheet();
+  if(sheet){ closeSheetById(sheet); pushBackState(); return; }
+  // 2) 지도(방) 화면이면 홈으로
+  if(currentScreen === 'app'){ leaveRoom(); pushBackState(); return; }
+  // 3) 서브 화면(방만들기/코드입장 등)이면 홈으로
+  if(['createScreen','joinScreen','joinConfirmScreen','createdScreen'].includes(currentScreen)){
+    goHomeOrLobby(); pushBackState(); return;
+  }
+  if(currentScreen === 'signupScreen'){ showScreen('loginScreen'); pushBackState(); return; }
+  // 4) 홈/로그인 화면이면 한 칸 다시 쌓아 앱이 바로 종료되는 것 방지 (한 번 더 누르면 종료)
+  pushBackState();
+});
+// 시트가 열릴 때마다 히스토리 한 칸 쌓기: .show 클래스 변화를 감시
+(function watchSheetOpen(){
+  const observer = new MutationObserver((muts)=>{
+    muts.forEach(m=>{
+      if(m.attributeName==='class' && m.target.classList.contains('show') && !m.oldValue?.includes('show')){
+        pushBackState();
+      }
+    });
+  });
+  document.addEventListener('DOMContentLoaded', ()=>{
+    OPEN_SHEET_IDS.forEach(id=>{ const el=$(id); if(el) observer.observe(el, {attributes:true, attributeOldValue:true, attributeFilter:['class']}); });
+  });
+  // DOMContentLoaded가 이미 지난 경우 대비
+  if(document.readyState !== 'loading'){
+    OPEN_SHEET_IDS.forEach(id=>{ const el=$(id); if(el) observer.observe(el, {attributes:true, attributeOldValue:true, attributeFilter:['class']}); });
+  }
+})();
+pushBackState(); // 시작 시 한 칸 쌓아 첫 뒤로가기에 바로 종료되지 않게
 
 /* ================= my rooms home ================= */
 function homeGreetingText(){
@@ -1513,7 +1688,7 @@ function roomCardHTML(r){
         <div class="rc-icon">${escapeHtml(r.emoji || '📍')}</div>
         <div class="rc-body">
           <div class="rc-name-row"><h3 class="rc-name">${escapeHtml(r.roomName || r.code)}</h3></div>
-          <p class="rc-meta" data-meta>코드 ${escapeHtml(r.code)}</p>
+          <p class="rc-meta skel" data-meta style="min-width:110px; min-height:0.9em;">코드 ${escapeHtml(r.code)}</p>
         </div>
         <div class="rc-dday hidden" data-dday></div>
       </div>
@@ -1521,9 +1696,9 @@ function roomCardHTML(r){
         <span class="rl-emoji">🗳️</span><span class="rl-text"></span>
       </div>
       <div class="rc-foot">
-        <div class="rc-avatars" data-avatars></div>
-        <span class="rc-member-text" data-member></span>
-        <span class="rc-place-link" data-places></span>
+        <div class="rc-avatars" data-avatars><span class="skel" style="width:44px; height:22px; border-radius:11px; display:inline-block;"></span></div>
+        <span class="rc-member-text skel" data-member style="min-width:52px; min-height:0.85em;"></span>
+        <span class="rc-place-link skel" data-places style="min-width:60px; min-height:0.85em;"></span>
       </div>
     </div>`;
 }
@@ -1549,12 +1724,16 @@ function renderRoomList(){
   const upcoming = all.filter(r=> !isPastMeetup(r));
   const past = all.filter(isPastMeetup);
   let html = upcoming.map(roomCardHTML).join('');
+  if(upcoming.length === 0){
+    html = `<div class="room-empty-full" style="padding:40px 20px;"><span class="big">🗺️</span>다가오는 모임이 없어요<br>새 모임을 만들어 보세요</div>`;
+  }
   if(past.length){
-    html += `<div class="past-section-title">📚 지난 모임 <span>${past.length}</span></div>`
-         + past.map(pastCardHTML).join('');
+    html += `<button class="past-menu-hint" id="pastMenuHint">📚 지난 모임 ${past.length}개는 메뉴에서 볼 수 있어요 →</button>`;
   }
   box.innerHTML = html;
-  box.querySelectorAll('.room-card, .past-card').forEach(el=>{
+  const hint = $('pastMenuHint');
+  if(hint) hint.addEventListener('click', openAccountMenu);
+  box.querySelectorAll('.room-card').forEach(el=>{
     el.addEventListener('click', (e)=>{
       if(e.target.closest('[data-del]')) return;
       quickEnter(el.dataset.code);
@@ -1580,7 +1759,7 @@ async function enrichRoomCard(code){
   try{ snap = await get(child(ref(db), 'rooms/'+code)); }catch(e){ return; }
   const card = document.querySelector(`.room-card[data-code="${CSS.escape(code)}"]`);
   if(!card) return;
-  if(!snap.exists()){ const m=card.querySelector('[data-meta]'); if(m) m.textContent='삭제된 방이에요'; return; }
+  if(!snap.exists()){ card.querySelectorAll('.skel').forEach(el=>el.classList.remove('skel')); const m=card.querySelector('[data-meta]'); if(m) m.textContent='삭제된 방이에요'; return; }
   const room = snap.val();
   const places = room.places ? Object.values(room.places) : [];
   const members = room.members ? Object.values(room.members) : [];
@@ -1602,7 +1781,7 @@ async function enrichRoomCard(code){
 
   const dateTxt = room.meetAt ? new Date(room.meetAt).toLocaleDateString('ko-KR',{month:'long',day:'numeric'}) : '날짜 미정';
   const metaEl = card.querySelector('[data-meta]');
-  if(metaEl) metaEl.textContent = `${dateTxt} · 후보 ${places.length}곳`;
+  if(metaEl){ metaEl.classList.remove('skel'); metaEl.textContent = `${dateTxt} · 후보 ${places.length}곳`; }
 
   const dday = roomDdayText(room.meetAt);
   if(dday){ const el=card.querySelector('[data-dday]'); if(el){ el.textContent=dday; el.classList.remove('hidden'); } }
@@ -1625,9 +1804,9 @@ async function enrichRoomCard(code){
   const avEl = card.querySelector('[data-avatars]');
   if(avEl) avEl.innerHTML = members.slice(0,4).map(m=> `<span style="background:${colorForName(m.id||m.nickname)}">${initials(m.nickname)}</span>`).join('');
   const memberEl = card.querySelector('[data-member]');
-  if(memberEl) memberEl.textContent = members.length + '명 참여';
+  if(memberEl){ memberEl.classList.remove('skel'); memberEl.textContent = members.length + '명 참여'; }
   const placesEl = card.querySelector('[data-places]');
-  if(placesEl) placesEl.textContent = `후보 ${places.length}곳 →`;
+  if(placesEl){ placesEl.classList.remove('skel'); placesEl.textContent = `후보 ${places.length}곳 →`; }
 }
 async function quickEnter(code){
   const authed = await ensureAuthReady();
@@ -1635,7 +1814,7 @@ async function quickEnter(code){
   let snap;
   try{ snap = await get(child(ref(db), 'rooms/'+code)); }
   catch(e){ showToast('연결하지 못했어요 · 인터넷을 확인해 주세요'); return; }
-  if(!snap.exists()){ showToast('이 방은 사라졌어요요'); forgetRoom(code); renderRoomList(); return; }
+  if(!snap.exists()){ showToast('이 방은 사라졌어요'); forgetRoom(code); renderRoomList(); return; }
   roomCode = code;
   try{ await update(ref(db, 'rooms/'+code+'/members/'+safeKey(myId)), { id:myId, nickname:myNickname, joinedAt:Date.now(), host: (snap.val().hostId===myId) }); }catch(e){}
   enterRoom();
@@ -1649,6 +1828,8 @@ document.querySelectorAll('[data-back-login]').forEach(b=> b.addEventListener('c
 
 /* ---- login ---- */
 $('googleLoginBtn').addEventListener('click', signInWithGoogleFlow);
+$('guestJoinBtn').addEventListener('click', guestJoin);
+$('guestNickname').addEventListener('keydown', (e)=>{ if(e.key==='Enter') guestJoin(); });
 $('loginBtn').addEventListener('click', async ()=>{
   const id = $('loginId').value.trim();
   const pw = $('loginPw').value;
@@ -1663,23 +1844,29 @@ $('loginBtn').addEventListener('click', async ()=>{
   afterAuthSuccess();
 });
 $('goSignup').addEventListener('click', ()=> showScreen('signupScreen'));
+$('resetPwBtn').addEventListener('click', ()=>{
+  const v = $('loginId').value.trim();
+  if(!v){ showToast('위 칸에 아이디 또는 이메일을 먼저 입력해 주세요'); $('loginId').focus(); return; }
+  requestPasswordReset(v);
+});
 
 /* ---- signup ---- */
 $('signupBtn').addEventListener('click', async ()=>{
   const id = $('signupId').value.trim();
+  const email = $('signupEmail').value.trim();
   const nickname = $('signupNickname').value.trim();
   const pw = $('signupPw').value;
   const pw2 = $('signupPw2').value;
-  if(!id || !nickname || !pw){ $('signupErr').textContent='빈칸 없이 모두 입력해 주세요!'; $('signupErr').style.display='block'; return; }
+  if(!id || !email || !nickname || !pw){ $('signupErr').textContent='빈칸 없이 모두 입력해 주세요!'; $('signupErr').style.display='block'; return; }
   if(pw.length < 6){ $('signupErr').textContent='비밀번호는 6자 이상으로 입력해 주세요'; $('signupErr').style.display='block'; return; }
-  if(pw !== pw2){ $('signupErr').textContent='비밀번호가 서로 달라'; $('signupErr').style.display='block'; return; }
+  if(pw !== pw2){ $('signupErr').textContent='비밀번호가 서로 달라요'; $('signupErr').style.display='block'; return; }
   $('signupErr').style.display='none';
   $('signupBtn').textContent='가입 중...';
-  const res = await signUp(id, pw, nickname);
+  const res = await signUp(id, email, pw, nickname);
   $('signupBtn').textContent='가입하고 시작하기 →';
   if(!res.ok){ $('signupErr').textContent=res.msg; $('signupErr').style.display='block'; return; }
   applySession(res.uid, nickname);
-  $('signupId').value=''; $('signupNickname').value=''; $('signupPw').value=''; $('signupPw2').value='';
+  $('signupId').value=''; $('signupEmail').value=''; $('signupNickname').value=''; $('signupPw').value=''; $('signupPw2').value='';
   showToast('가입 완료! 환영해요 🎉');
   afterAuthSuccess();
 });
@@ -1826,8 +2013,19 @@ function onRoomUpdate(){
   renderFinal();
   renderList();
   renderMarkers();
+  renderMemberLegend();
   checkReminderBanner();
   if(detailPlaceId) renderDetail();
+}
+function renderMemberLegend(){
+  const el = $('memberLegend');
+  if(!el) return;
+  const members = room.members ? Object.values(room.members) : [];
+  if(members.length < 2){ el.innerHTML=''; return; } // 혼자면 범례 불필요
+  el.innerHTML = members.map(m=>{
+    const c = colorForName(m.id || m.nickname);
+    return `<span class="ml-chip"><span class="ml-dot" style="background:${c}">${initials(m.nickname)}</span>${escapeHtml(m.nickname)}</span>`;
+  }).join('');
 }
 
 /* ================= member list ================= */
@@ -1902,7 +2100,9 @@ function renderDetail(){
   } else {
     hostBox.classList.add('hidden');
   }
-  $('detailDeleteBtn').style.display = (myId===p.authorId || isHost()) ? 'block' : 'none';
+  const canEdit = (myId===p.authorId || isHost());
+  $('detailEditBtn').classList.toggle('hidden', !canEdit);
+  $('detailDeleteBtn').classList.toggle('hidden', !canEdit);
 }
 function openDetail(id){
   detailPlaceId = id;
@@ -1920,6 +2120,8 @@ async function openAccountMenu(){
   $('menuNickname').textContent = myNickname || '이름 없음';
   $('menuId').textContent = '불러오는 중...';
   $('menuThemeLabel').textContent = getTheme()==='dark' ? '다크 모드' : '라이트 모드';
+  const pastCnt = getMyRooms().filter(isPastMeetup).length;
+  $('menuPastCount').textContent = pastCnt ? '('+pastCnt+')' : '';
   refreshNotifyUI();
   $('menuOverlay').classList.add('show');
   try{
@@ -2012,7 +2214,7 @@ function renderDDay(){
 
 async function renderWeather(){
   const iconEl = $('weatherIcon'), valEl = $('weatherValue');
-  if(!room.meetAt){ valEl.textContent = '약속일 미정'; iconEl.textContent='🌤️'; lastWeatherData=null; return; }
+  if(!room.meetAt){ valEl.textContent = '날짜를 정하면 보여드려요'; iconEl.textContent='🌤️'; lastWeatherData=null; return; }
   const meet = new Date(room.meetAt);
   const now = new Date();
   const diffDays = Math.round((new Date(meet.getFullYear(),meet.getMonth(),meet.getDate()) - new Date(now.getFullYear(),now.getMonth(),now.getDate()))/86400000);
@@ -2210,8 +2412,42 @@ function subscribeMemberLocations(){
   if(unsubLocations) unsubLocations();
   const lRef = ref(db, 'rooms/'+roomCode+'/locations');
   unsubLocations = onValue(lRef, (snap)=>{
-    renderMemberLocations(snap.val() || {});
+    latestMemberLocs = snap.val() || {};
+    renderMemberLocations(latestMemberLocs);
   });
+}
+let latestMemberLocs = {};
+
+/* ================= 중간지점 추천 ================= */
+let midpointMarker = null;
+function findMidpoint(){
+  // 1순위: 실시간 위치 공유 중인 멤버들의 평균
+  const locs = Object.values(latestMemberLocs || {}).filter(l=> typeof l.lat==='number' && typeof l.lng==='number');
+  let pts = locs.map(l=> ({lat:l.lat, lng:l.lng}));
+  let basis = '위치 공유 중인 ' + pts.length + '명';
+  // 2순위: 후보 장소들의 평균
+  if(pts.length < 2){
+    pts = Object.values(places||{}).map(p=> ({lat:p.lat, lng:p.lng}));
+    basis = '후보 장소 ' + pts.length + '곳';
+  }
+  if(pts.length < 2){
+    showToast('중간지점을 구하려면 위치 공유 2명 이상 또는 후보 2곳 이상이 필요해요');
+    return;
+  }
+  const lat = pts.reduce((s,p)=>s+p.lat,0)/pts.length;
+  const lng = pts.reduce((s,p)=>s+p.lng,0)/pts.length;
+  if(midpointMarker){ midpointMarker.setMap(null); midpointMarker=null; }
+  midpointMarker = new naver.maps.Marker({
+    position: new naver.maps.LatLng(lat,lng), map,
+    icon: { content:'<div class="midpoint-pin">🧭</div>', size:new naver.maps.Size(40,40), anchor:new naver.maps.Point(20,20) },
+    zIndex: 300
+  });
+  map.morph(new naver.maps.LatLng(lat,lng), 15, { duration:800 });
+  haptic(12);
+  showToast(`${basis} 기준 중간지점이에요 · 지도를 눌러 근처에 후보를 올려 보세요`);
+  // 접혀있던 패널 내리고 지도 보이게
+  document.querySelector('.panel').classList.remove('expanded');
+  setTimeout(()=> mapResize(), 340);
 }
 function renderMemberLocations(locs){
   const seen = new Set();
@@ -2377,7 +2613,6 @@ function clearTempMarker(){ if(tempMarker){ tempMarker.setMap(null); tempMarker=
 
 /* ================= counts ================= */
 function countVotes(p){ return p.votes ? Object.keys(p.votes).length : 0; }
-function countLikes(p){ return p.likes ? Object.keys(p.likes).length : 0; }
 function countDislikes(p){ return p.dislikes ? Object.keys(p.dislikes).length : 0; }
 function has(obj, me){ return !!(obj && obj[me]); }
 
@@ -2390,14 +2625,13 @@ function renderList(){
     listEl.innerHTML = `<div class="empty"><span class="big">🗺️</span>아직 후보가 없어요<br>지도를 탭하거나 검색해서 첫 장소를 올려 보세요</div>`;
     return;
   }
-  const sorted = arr.sort((a,b)=> countVotes(b)-countVotes(a));
+  const sorted = arr.sort((a,b)=> (countVotes(b)-countDislikes(b)) - (countVotes(a)-countDislikes(a)));
   const topVotes = countVotes(sorted[0]);
   const canVote = room.allowVote || isHost();
   listEl.innerHTML = sorted.map((p,i)=>{
     const isFinal = room.finalPlaceId === p.id;
     const isTop = topVotes>0 && countVotes(p)===topVotes && !isFinal;
     const voted = has(p.votes, myId);
-    const liked = has(p.likes, myId);
     const disliked = has(p.dislikes, myId);
     return `
       <div class="place-card ${isFinal?'confirmed':''} ${isTop?'top':''}" style="animation-delay:${i*40}ms">
@@ -2409,13 +2643,12 @@ function renderList(){
               ${isTop?'<span class="badge rank">1위</span>':''}
             </div>
             ${p.memo?`<div class="pc-memo">${escapeHtml(p.memo)}</div>`:''}
-            <div class="pc-author">${escapeHtml(p.author)} 추천 · 👍${countVotes(p)} · 😊${countLikes(p)} · 😕${countDislikes(p)}</div>
+            <div class="pc-author">${escapeHtml(p.author)} 추천</div>
           </div>
         </div>
         <div class="pc-actions">
-          <button class="react-btn vote ${voted?'on':''}" data-act="vote" data-id="${p.id}" ${canVote?'':'disabled style=opacity:.4'}>👍 투표 ${countVotes(p)}</button>
-          <button class="react-btn like ${liked?'on':''}" data-act="like" data-id="${p.id}">😊 ${countLikes(p)}</button>
-          <button class="react-btn dislike ${disliked?'on':''}" data-act="dislike" data-id="${p.id}">😕 ${countDislikes(p)}</button>
+          <button class="react-btn vote ${voted?'on':''}" data-act="vote" data-id="${p.id}" ${canVote?'':'disabled style=opacity:.4'}>👍 ${countVotes(p)}</button>
+          <button class="react-btn dislike ${disliked?'on':''}" data-act="dislike" data-id="${p.id}" ${canVote?'':'disabled style=opacity:.4'}>👎 ${countDislikes(p)}</button>
           <div class="pc-spacer"></div>
           <button class="mini-link confirm" data-act="detail" data-id="${p.id}">상세 ›</button>
           ${isHost() ? (isFinal
@@ -2476,14 +2709,11 @@ function handleAction(act, id){
   if(act==='vote'){
     if(!(room.allowVote || isHost())){ showToast('방장이 투표를 잠갔어요'); return; }
     haptic(12);
-    toggleField(id, 'votes');
-  } else if(act==='like'){
-    // like and dislike are mutually exclusive
-    haptic(10);
-    setExclusive(id, 'likes', 'dislikes');
+    setExclusive(id, 'votes', 'dislikes');
   } else if(act==='dislike'){
+    if(!(room.allowVote || isHost())){ showToast('방장이 투표를 잠갔어요'); return; }
     haptic(10);
-    setExclusive(id, 'dislikes', 'likes');
+    setExclusive(id, 'dislikes', 'votes');
   } else if(act==='confirm'){
     update(ref(db,'rooms/'+roomCode), { finalPlaceId: id }).then(()=>{
       showToast('최종 장소로 확정했어요! ✅');
@@ -2500,13 +2730,6 @@ function handleAction(act, id){
       showToast('삭제했어요');
     });
   }
-}
-function toggleField(id, field){
-  const p = places[id];
-  const obj = p[field] || {};
-  const path = 'rooms/'+roomCode+'/places/'+id+'/'+field+'/'+safeKey(myId);
-  if(obj[safeKey(myId)]){ remove(ref(db, path)); }
-  else { set(ref(db, path), true); }
 }
 function setExclusive(id, addField, removeField){
   const p = places[id];
@@ -2670,7 +2893,7 @@ function saveAdd(){
   const id='pl_'+Date.now()+'_'+Math.floor(Math.random()*1000);
   const savedLatLng = pendingLatLng;
   const ex = pendingExtra;
-  const place={ id, lat:savedLatLng.lat, lng:savedLatLng.lng, name, memo, author:myNickname, authorId:myId, color:colorForName(myId), votes:{}, likes:{}, dislikes:{}, ts:Date.now() };
+  const place={ id, lat:savedLatLng.lat, lng:savedLatLng.lng, name, memo, author:myNickname, authorId:myId, color:colorForName(myId), votes:{}, dislikes:{}, ts:Date.now() };
   if(ex){
     if(ex.phone) place.phone = ex.phone;
     if(ex.category) place.category = ex.category;
@@ -2696,6 +2919,8 @@ function openSettings(){
   $('hostSettings').classList.toggle('hidden', !host);
   $('memberSettings').classList.toggle('hidden', host);
   if(host){
+    $('editRoomName').value = room.name || '';
+    $('editRoomEmoji').value = room.emoji || '📍';
     if(room.meetAt){
       const d = new Date(room.meetAt);
       $('meetDateInput').value = toLocalInput(d);
@@ -2742,7 +2967,11 @@ function saveSettings(){
       meetHasTime = false;
     }
   }
+  const newName = $('editRoomName').value.trim();
+  const newEmoji = $('editRoomEmoji').value.trim() || '📍';
+  if(!newName){ showToast('모임 이름을 입력해 주세요'); return; }
   update(ref(db,'rooms/'+roomCode), {
+    name: newName, emoji: newEmoji,
     meetAt, meetHasTime,
     allowAdd: $('allowAddToggle').checked,
     allowVote: $('allowVoteToggle').checked
@@ -2798,6 +3027,7 @@ function leaveRoom(){
   markers = {};
   closeMarkerPopup();
   clearTempMarker();
+  if(midpointMarker){ try{ midpointMarker.setMap(null); }catch(e){} midpointMarker=null; }
   closeDetail();
   $('addOverlay').classList.remove('show');
   room=null; places={}; roomCode=null;
@@ -2953,8 +3183,19 @@ $('detailConfirmBtn').addEventListener('click', ()=>{
   handleAction(isFinal ? 'unconfirm' : 'confirm', detailPlaceId);
 });
 $('detailDeleteBtn').addEventListener('click', ()=>{ if(!detailPlaceId) return; handleAction('del', detailPlaceId); closeDetail(); });
+$('detailEditBtn').addEventListener('click', ()=>{
+  if(!detailPlaceId) return;
+  const p = places[detailPlaceId];
+  if(!p) return;
+  const nv = prompt('메모를 수정해 주세요', p.memo || '');
+  if(nv === null) return; // 취소
+  update(ref(db,'rooms/'+roomCode+'/places/'+detailPlaceId), { memo: nv.trim() })
+    .then(()=> showToast('메모를 수정했어요'))
+    .catch(()=> showToast('수정하지 못했어요 · 인터넷을 확인해 주세요'));
+});
 $('settingsCancel').addEventListener('click', closeSettings);
 $('settingsSave').addEventListener('click', saveSettings);
+$('midpointBtn').addEventListener('click', findMidpoint);
 $('meetTimeToggle').addEventListener('change', (e)=>{
   $('meetTimeField').classList.toggle('hidden', !e.target.checked);
 });
@@ -3062,7 +3303,33 @@ function proceedAfterOnboarding(){
     reconcileSessionInBackground();
   } else {
     showScreen('loginScreen');
+    // 초대 링크로 온 미가입자에게 게스트 입장 경로 제공
+    if(deepLinkRoom){ $('guestJoinBox').classList.remove('hidden'); }
   }
+}
+async function guestJoin(){
+  const nick = $('guestNickname').value.trim();
+  if(!nick){ showToast('닉네임을 입력해 주세요'); $('guestNickname').focus(); return; }
+  if(!fbReady){ const ok = await loadFirebase(); if(!ok){ showToast('서버에 연결하지 못했어요'); return; } }
+  $('guestJoinBtn').textContent = '입장 중...';
+  try{
+    const cred = await signInAnonymously(auth);
+    const uid = cred.user.uid;
+    await set(ref(db, 'users/'+uid), { nickname:nick, provider:'guest', createdAt:Date.now() });
+    applySession(uid, nick);
+    if(deepLinkRoom){
+      showScreen('joinScreen');
+      $('joinCode').value = deepLinkRoom;
+      // 자동으로 미리보기까지 진행
+      const btn = $('joinBtn'); if(btn) btn.click();
+    } else {
+      goHomeOrLobby();
+    }
+  }catch(e){
+    console.error(e);
+    showToast('게스트 입장에 실패했어요 · 다시 시도해 주세요');
+  }
+  $('guestJoinBtn').textContent = '👋 가입 없이 둘러보기';
 }
 async function reconcileSessionInBackground(){
   const authed = await ensureAuthReady();
@@ -3150,6 +3417,19 @@ $('menuOverlay').addEventListener('click', (e)=>{ if(e.target.id==='menuOverlay'
 $('menuLogoutBtn').addEventListener('click', doLogout);
 $('menuHelpBtn').addEventListener('click', ()=>{ closeAccountMenu(); replayOnboarding(); });
 $('menuNicknameBtn').addEventListener('click', ()=>{ closeAccountMenu(); openNicknameSheet(); });
+$('menuPastBtn').addEventListener('click', ()=>{
+  closeAccountMenu();
+  const past = getMyRooms().filter(isPastMeetup);
+  const box = $('pastListBox');
+  box.innerHTML = past.length
+    ? past.map(pastCardHTML).join('')
+    : '<div class="empty" style="padding:30px 10px;"><span class="big">🌱</span>아직 지난 모임이 없어요</div>';
+  box.querySelectorAll('.past-card').forEach(el=>{
+    el.addEventListener('click', ()=>{ $('pastOverlay').classList.remove('show'); quickEnter(el.dataset.code); });
+  });
+  $('pastOverlay').classList.add('show');
+});
+$('pastOverlay').addEventListener('click', (e)=>{ if(e.target.id==='pastOverlay') $('pastOverlay').classList.remove('show'); });
 $('menuFeedbackBtn').addEventListener('click', ()=>{ closeAccountMenu(); openFeedbackSheet(); });
 
 /* ---- 닉네임 변경 시트 ---- */
