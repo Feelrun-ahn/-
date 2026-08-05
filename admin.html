@@ -55,6 +55,7 @@
   .meta{ font-size:0.78rem; color:var(--soft); }
   .acts{ display:flex; gap:7px; margin-top:11px; flex-wrap:wrap; }
   .empty{ text-align:center; padding:50px 20px; color:var(--faint); }
+  .warnbox{ background:rgba(255,107,107,.12); border:1px solid var(--danger); color:#FFC9C9; border-radius:14px; padding:14px 16px; margin-bottom:16px; font-size:0.84rem; line-height:1.6; }
   .empty .big{ font-size:2.4rem; display:block; margin-bottom:10px; }
   .hidden{ display:none !important; }
   .load{ text-align:center; padding:40px; color:var(--soft); }
@@ -93,6 +94,7 @@
       <button class="btn ghost" id="admLogout" style="margin-left:auto;">로그아웃</button>
     </div>
 
+    <div class="warnbox hidden" id="statsWarn"></div>
     <div class="stats" id="statsBox"></div>
 
     <div class="tabs">
@@ -184,7 +186,7 @@ document.querySelectorAll('.tab').forEach(t=>{
 });
 
 /* ---------- 데이터 로드 ---------- */
-let reports = [], feedback = [];
+let reports = [], feedback = [], reportsErr = null;
 async function loadAll(){
   $('tabReports').innerHTML = '<div class="load">불러오는 중...</div>';
   $('tabFeedback').innerHTML = '<div class="load">불러오는 중...</div>';
@@ -196,12 +198,16 @@ async function loadReports(){
     const snap = await get(child(ref(db), 'reports'));
     reports = snap.exists() ? Object.entries(snap.val()).map(([k,v])=>({key:k,...v})) : [];
     reports.sort((a,b)=> (b.ts||0)-(a.ts||0));
-  }catch(e){ console.error(e); reports = []; }
+  }catch(e){ console.error(e); reports = []; reportsErr = (e.code||e.message); }
   $('cReports').textContent = reports.filter(r=>!r.handled).length;
   renderReports();
 }
 function renderReports(){
   const box = $('tabReports');
+  if(reportsErr){
+    box.innerHTML = '<div class="warnbox">⚠️ 신고 목록을 읽지 못했어요 ('+esc(reportsErr)+')<br>Firebase 규칙의 <b>reports</b> 읽기 권한과 관리자 UID를 확인해 주세요.</div>';
+    return;
+  }
   if(reports.length === 0){
     box.innerHTML = '<div class="empty"><span class="big">✅</span>접수된 신고가 없어요</div>';
     return;
@@ -301,10 +307,11 @@ async function loadFeedback(){
 
 async function loadStats(){
   let users = 0, rooms = 0, places = 0, msgs = 0;
+  const errs = [];
   try{
     const u = await get(child(ref(db),'users'));
     if(u.exists()) users = Object.keys(u.val()).length;
-  }catch(e){}
+  }catch(e){ console.error(e); errs.push('users: '+(e.code||e.message)); }
   try{
     const r = await get(child(ref(db),'rooms'));
     if(r.exists()){
@@ -315,7 +322,15 @@ async function loadStats(){
         msgs   += x.messages ? Object.keys(x.messages).length : 0;
       });
     }
-  }catch(e){}
+  }catch(e){ console.error(e); errs.push('rooms: '+(e.code||e.message)); }
+  const warn = $('statsWarn');
+  if(errs.length){
+    warn.classList.remove('hidden');
+    warn.innerHTML = '⚠️ 데이터를 읽지 못했어요 (' + errs.map(esc).join(', ') + ')<br>'
+      + 'Firebase 규칙에서 <b>users</b>·<b>rooms</b> 경로에 관리자 전체 읽기 권한이 필요합니다.';
+  } else {
+    warn.classList.add('hidden');
+  }
   const pend = reports.filter(x=>!x.handled).length;
   $('statsBox').innerHTML = `
     <div class="stat"><div class="n">${users}</div><div class="l">가입자</div></div>
