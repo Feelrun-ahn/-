@@ -471,6 +471,8 @@
   /* ===== live member location markers ===== */
   #shareLocBtn.active{ background:var(--accent) !important; color:#fff !important; }
   .member-pin{ position:relative; width:34px; height:34px; }
+  .member-pin.stale{ opacity:0.55; }
+  .member-pin.stale .mp-ring{ animation:none !important; border-style:dashed; }
   .member-pin .mp-ring{ position:absolute; inset:0; border-radius:50%; border:2.5px solid var(--accent); animation:mpPulse 1.8s ease-out infinite; }
   @keyframes mpPulse{ 0%{ transform:scale(0.7); opacity:0.9; } 100%{ transform:scale(1.5); opacity:0; } }
   .member-pin .mp-avatar{ position:absolute; inset:3px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; font-size:0.72rem; font-weight:800; border:2px solid #fff; box-shadow:0 2px 6px rgba(0,0,0,0.3); }
@@ -1513,6 +1515,11 @@
     <div class="sheet-grip"></div>
     <h3>📡 내 위치 공유하기</h3>
     <p class="sub">이 방에 있는 모든 멤버에게 <b>내 실시간 위치</b>가 지도에 표시돼요. 언제든 다시 눌러 끌 수 있어요.</p>
+    <div class="mp-note" style="margin-bottom:14px;">
+      ℹ️ 공유를 끄면 실시간 표시는 멈추지만, <b>마지막 위치</b>는 '만나는 곳' 계산에 쓰이도록 <b>6시간 동안</b> 남아요.<br>
+      바로 지우고 싶으면 아래 <b>내 위치 기록 삭제</b>를 눌러 주세요.
+    </div>
+    <button class="action-item danger" id="locDeleteBtn"><span>🗑️</span>내 위치 기록 삭제</button>
     <div class="sheet-actions">
       <button class="btn btn-cancel" id="locShareCancel">취소</button>
       <button class="btn btn-save" id="locShareConfirm">공유 시작</button>
@@ -2916,7 +2923,7 @@ function startSharingLocation(){
     (pos)=>{
       set(locRef, {
         id:myId, nickname:myNickname, color:colorForName(myId),
-        lat:pos.coords.latitude, lng:pos.coords.longitude, ts:Date.now()
+        lat:pos.coords.latitude, lng:pos.coords.longitude, ts:Date.now(), live:true
       }).catch(()=>{});
     },
     (err)=>{ console.warn('위치 공유 오류', err); showToast('위치를 가져오지 못해 공유를 중단했어요'); stopSharingLocation(); },
@@ -2924,13 +2931,35 @@ function startSharingLocation(){
   );
   showToast('내 위치 공유를 시작했어요 📡');
 }
+const LOC_STALE_MS = 6*60*60*1000; // 6시간이 지난 마지막 위치는 사용하지 않음
+
 function stopSharingLocation(){
   sharingLocation = false;
   const btn = $('shareLocBtn'); if(btn) btn.classList.remove('active');
   if(locWatchId!=null){ navigator.geolocation.clearWatch(locWatchId); locWatchId=null; }
   if(roomCode && myId){
-    try{ remove(ref(db, 'rooms/'+roomCode+'/locations/'+safeKey(myId))); }catch(e){}
+    // 실시간 공유는 끝났지만, 만나는 곳 계산에 쓸 '마지막 위치'로만 남겨둔다.
+    // (지도에는 흐리게 표시되고, 6시간이 지나면 자동으로 무시됨)
+    try{
+      update(ref(db, 'rooms/'+roomCode+'/locations/'+safeKey(myId)), {
+        live: false, stoppedAt: Date.now()
+      });
+    }catch(e){}
   }
+  showToast('실시간 공유를 껐어요 · 마지막 위치는 만나는 곳 계산에만 쓰여요');
+}
+// 내 위치 기록을 방에서 완전히 삭제
+function deleteMyLocation(){
+  if(!roomCode || !myId) return;
+  remove(ref(db, 'rooms/'+roomCode+'/locations/'+safeKey(myId)))
+    .then(()=> showToast('내 위치 기록을 삭제했어요'))
+    .catch(()=> showToast('삭제하지 못했어요'));
+}
+function isFreshLoc(l){
+  if(!l || typeof l.lat !== 'number') return false;
+  if(l.live) return true;
+  const t = l.stoppedAt || l.ts || 0;
+  return (Date.now() - t) < LOC_STALE_MS;
 }
 function subscribeMemberLocations(){
   if(unsubLocations) unsubLocations();
@@ -2982,9 +3011,10 @@ function kakaoKeywordSearch(kw, lat, lng, radius){
 
 async function findMidpoint(){
   // --- 1. 멤버들의 현재 위치 모으기 ---
+  // 실시간 공유 중인 위치 + 최근 6시간 내 마지막 위치까지 모두 사용
   const shared = Object.values(latestMemberLocs || {})
-    .filter(l=> typeof l.lat==='number' && typeof l.lng==='number' && l.id !== myId)
-    .map(l=> ({ lat:l.lat, lng:l.lng, nickname:l.nickname || '친구' }));
+    .filter(l=> isFreshLoc(l) && l.id !== myId)
+    .map(l=> ({ lat:l.lat, lng:l.lng, nickname:l.nickname || '친구', live:!!l.live }));
 
   $('midpointOverlay').classList.add('show');
   $('midpointLoading').classList.remove('hidden');
@@ -3183,9 +3213,11 @@ function renderMemberLocations(locs){
   const seen = new Set();
   Object.values(locs).forEach(loc=>{
     if(loc.id === myId) return; // 내 위치는 지도에 다시 안 그림 (locate-btn과 별개)
+    if(!isFreshLoc(loc)) return; // 오래된 마지막 위치는 표시하지 않음
     seen.add(loc.id);
+    const stale = !loc.live;
     const icon = {
-      content: `<div class="member-pin"><div class="mp-ring" style="border-color:${loc.color||'#5B5BD6'}"></div><div class="mp-avatar" style="background:${loc.color||'#5B5BD6'}">${initials(loc.nickname)}</div></div>`,
+      content: `<div class="member-pin ${stale?'stale':''}"><div class="mp-ring" style="border-color:${loc.color||'#5B5BD6'}"></div><div class="mp-avatar" style="background:${loc.color||'#5B5BD6'}">${initials(loc.nickname)}</div></div>`,
       size: new naver.maps.Size(34,34), anchor: new naver.maps.Point(17,17)
     };
     if(memberLocMarkers[loc.id]){
@@ -4456,6 +4488,11 @@ $('chatOverlay').addEventListener('click', (e)=>{ if(e.target.id==='chatOverlay'
 
 /* ---- 위치 공유 ---- */
 $('locShareCancel').addEventListener('click', ()=> $('locShareOverlay').classList.remove('show'));
+$('locDeleteBtn').addEventListener('click', ()=>{
+  if(!confirm('이 방에 남아 있는 내 위치 기록을 삭제할까요?')) return;
+  deleteMyLocation();
+  $('locShareOverlay').classList.remove('show');
+});
 $('locShareConfirm').addEventListener('click', startSharingLocation);
 $('locShareOverlay').addEventListener('click', (e)=>{ if(e.target.id==='locShareOverlay') $('locShareOverlay').classList.remove('show'); });
 
