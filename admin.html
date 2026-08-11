@@ -110,12 +110,14 @@
     <div class="tabs">
       <button class="tab on" data-tab="reports">🚩 신고<span class="cnt" id="cReports">0</span></button>
       <button class="tab" data-tab="feedback">💬 피드백<span class="cnt" id="cFeedback">0</span></button>
+      <button class="tab" data-tab="biz">🤝 광고·협업<span class="cnt" id="cBiz">0</span></button>
       <button class="tab" data-tab="notice">📢 공지사항</button>
       <button class="tab" data-tab="privacy">🔐 개인정보 요청</button>
     </div>
 
     <div id="tabReports"></div>
     <div id="tabFeedback" class="hidden"></div>
+    <div id="tabBiz" class="hidden"></div>
 
     <!-- 공지사항 관리 -->
     <div id="tabNotice" class="hidden">
@@ -228,20 +230,67 @@ document.querySelectorAll('.tab').forEach(t=>{
   t.addEventListener('click', ()=>{
     document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
     t.classList.add('on');
-    ['reports','feedback','notice','privacy'].forEach(k=>{
+    ['reports','feedback','biz','notice','privacy'].forEach(k=>{
       $('tab'+k.charAt(0).toUpperCase()+k.slice(1)).classList.toggle('hidden', k !== t.dataset.tab);
     });
     if(t.dataset.tab === 'notice') loadNotices();
+    if(t.dataset.tab === 'biz') loadInquiries();
   });
 });
 
 /* ---------- 데이터 로드 ---------- */
-let reports = [], feedback = [], reportsErr = null;
+let reports = [], feedback = [], inquiries = [], reportsErr = null;
 let allUsers = [], allRooms = [];
+async function loadInquiries(){
+  let list = [];
+  try{
+    const snap = await get(child(ref(db),'inquiries'));
+    list = snap.exists() ? Object.entries(snap.val()).map(([k,v])=>({key:k,...v})) : [];
+    list.sort((a,b)=> (b.ts||0)-(a.ts||0));
+  }catch(e){ console.error(e); }
+  inquiries = list;
+  $('cBiz').textContent = list.filter(x=>!x.handled).length;
+  const box = $('tabBiz');
+  box.innerHTML = list.length ? list.map(q=>`
+    <div class="item ${q.handled?'':'flag'}">
+      <div class="row">
+        <span class="badge">${esc(q.type||'문의')}</span>
+        ${q.handled?'<span class="badge grn">처리됨</span>':''}
+        <span class="when">${when(q.ts)}</span>
+      </div>
+      <div class="meta">
+        <b style="color:var(--text); font-size:0.95rem;">${esc(q.name||'-')}</b>
+        ${q.company?' · '+esc(q.company):''}<br>
+        📧 <a href="mailto:${esc(q.email||'')}" style="color:var(--accent2);">${esc(q.email||'-')}</a>
+        ${q.fromNickname?'<br><span style="color:var(--faint); font-size:0.74rem;">앱 사용자: '+esc(q.fromNickname)+'</span>':''}
+      </div>
+      <div class="content">${esc(q.message||'')}</div>
+      <div class="acts">
+        <a class="btn sm" href="mailto:${esc(q.email||'')}?subject=${encodeURIComponent('[어디가지?] '+(q.type||'문의')+' 회신')}" style="text-decoration:none; display:inline-block;">✉️ 메일로 답장</a>
+        ${!q.handled?`<button class="btn sm ghost" data-biz-done="${esc(q.key)}">처리 완료</button>`:''}
+        <button class="btn sm danger" data-biz-del="${esc(q.key)}">삭제</button>
+      </div>
+    </div>`).join('') : '<div class="empty"><span class="big">🤝</span>받은 문의가 없어요</div>';
+
+  box.querySelectorAll('[data-biz-done]').forEach(b=>{
+    b.addEventListener('click', async ()=>{
+      try{ await update(ref(db,'inquiries/'+b.dataset.bizDone), { handled:true, handledAt:Date.now() }); loadInquiries(); }
+      catch(e){ alert('실패: '+e.message); }
+    });
+  });
+  box.querySelectorAll('[data-biz-del]').forEach(b=>{
+    b.addEventListener('click', async ()=>{
+      if(!confirm('이 문의를 삭제할까요?')) return;
+      try{ await remove(ref(db,'inquiries/'+b.dataset.bizDel)); loadInquiries(); }
+      catch(e){ alert('실패: '+e.message); }
+    });
+  });
+}
+
 async function loadAll(){
   $('tabReports').innerHTML = '<div class="load">불러오는 중...</div>';
   $('tabFeedback').innerHTML = '<div class="load">불러오는 중...</div>';
-  await Promise.all([loadReports(), loadFeedback(), loadStats()]);
+  await Promise.all([loadReports(), loadFeedback(), loadInquiries(), loadStats()]);
 }
 
 async function loadReports(){
