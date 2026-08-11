@@ -117,6 +117,7 @@
       <button class="tab" data-tab="feedback">💬 피드백<span class="cnt" id="cFeedback">0</span></button>
       <button class="tab" data-tab="biz">🤝 광고·협업<span class="cnt" id="cBiz">0</span></button>
       <button class="tab" data-tab="notice">📢 공지사항</button>
+      <button class="tab" data-tab="audit">📋 열람 기록</button>
       <button class="tab" data-tab="privacy">🔐 개인정보 요청</button>
     </div>
 
@@ -145,6 +146,17 @@
     </div>
 
     <!-- 개인정보 요청 처리 -->
+    <!-- 감사 로그 -->
+    <div id="tabAudit" class="hidden">
+      <div class="item">
+        <div class="row"><span class="badge">개인정보 처리 기록</span></div>
+        <p class="hint">관리자가 이용자 정보를 <b>열람·내보내기·삭제·정지</b>한 내역이 자동으로 기록됩니다.
+        개인정보보호법상 처리 내역 관리와 분쟁 대응 근거로 사용됩니다. 기록은 임의로 수정할 수 없습니다.</p>
+        <div class="acts"><button class="btn sm ghost" id="auditRefresh">새로고침</button></div>
+      </div>
+      <div id="auditList"></div>
+    </div>
+
     <div id="tabPrivacy" class="hidden">
       <div class="item">
         <div class="row"><span class="badge">이용자 조회 · 권리 행사 처리</span></div>
@@ -189,6 +201,23 @@ const app = initializeApp({
 const auth = getAuth(app);
 const db = getDatabase(app);
 const $ = id => document.getElementById(id);
+
+/* ---------- 관리자 열람·조치 기록 (감사 로그) ----------
+   개인정보 열람·삭제 등 민감한 행위를 자동으로 기록해 둔다.
+   나중에 "정당한 목적으로 처리했다"는 근거가 된다. */
+async function auditLog(action, target, detail){
+  try{
+    const id = 'ad_' + Date.now() + '_' + Math.floor(Math.random()*1000);
+    await set(ref(db, 'auditLogs/' + id), {
+      id, action,
+      target: target || '',
+      detail: detail || '',
+      adminUid: auth.currentUser ? auth.currentUser.uid : '',
+      adminEmail: auth.currentUser ? auth.currentUser.email : '',
+      ts: Date.now()
+    });
+  }catch(e){ console.warn('감사 로그 저장 실패', e); }
+}
 const esc = s => String(s??'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 function when(ts){
   if(!ts) return '';
@@ -225,6 +254,7 @@ async function doLogin(){
 }
 $('admLogout').addEventListener('click', ()=> signOut(auth));
 $('detailClose').addEventListener('click', ()=> $('detailView').classList.add('hidden'));
+$('auditRefresh').addEventListener('click', loadAudit);
 
 onAuthStateChanged(auth, user=>{
   const ok = user && user.uid === ADMIN_UID;
@@ -241,17 +271,45 @@ document.querySelectorAll('.tab').forEach(t=>{
   t.addEventListener('click', ()=>{
     document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
     t.classList.add('on');
-    ['reports','feedback','biz','notice','privacy'].forEach(k=>{
+    ['reports','feedback','biz','notice','audit','privacy'].forEach(k=>{
       $('tab'+k.charAt(0).toUpperCase()+k.slice(1)).classList.toggle('hidden', k !== t.dataset.tab);
     });
     if(t.dataset.tab === 'notice') loadNotices();
     if(t.dataset.tab === 'biz') loadInquiries();
+    if(t.dataset.tab === 'audit') loadAudit();
   });
 });
 
 /* ---------- 데이터 로드 ---------- */
 let reports = [], feedback = [], inquiries = [], reportsErr = null;
 let allUsers = [], allRooms = [];
+async function loadAudit(){
+  const box = $('auditList');
+  box.innerHTML = '<div class="load">불러오는 중...</div>';
+  let list = [];
+  try{
+    const snap = await get(child(ref(db),'auditLogs'));
+    list = snap.exists() ? Object.values(snap.val()) : [];
+    list.sort((a,b)=> (b.ts||0)-(a.ts||0));
+  }catch(e){
+    box.innerHTML = '<div class="warnbox">⚠️ 기록을 읽지 못했어요 ('+esc(e.code||e.message)+')<br>Firebase 규칙에 <b>auditLogs</b> 경로가 필요합니다.</div>';
+    return;
+  }
+  const icon = a => ({열람:'👁️', 내보내기:'📄', 삭제:'🗑️', 정지:'🚫', 정지해제:'✅', 콘텐츠삭제:'🧹'}[a] || '📋');
+  box.innerHTML = list.length ? list.slice(0,300).map(l=>`
+    <div class="item">
+      <div class="row">
+        <span class="badge">${icon(l.action)} ${esc(l.action)}</span>
+        <span class="when">${when(l.ts)}</span>
+      </div>
+      <div class="meta">
+        대상: <b style="color:var(--text);">${esc(l.target||'-')}</b><br>
+        ${l.detail?esc(l.detail)+'<br>':''}
+        <span style="color:var(--faint); font-size:0.72rem;">처리자: ${esc(l.adminEmail||l.adminUid||'-')}</span>
+      </div>
+    </div>`).join('') : '<div class="empty"><span class="big">📋</span>기록이 없어요</div>';
+}
+
 async function loadInquiries(){
   let list = [];
   try{
@@ -355,6 +413,7 @@ function bindReportActions(){
       try{
         await remove(ref(db,'rooms/'+rc+'/messages/'+mid));
         await update(ref(db,'reports/'+key), { handled:true, handledAt:Date.now() });
+        auditLog('콘텐츠삭제', '방 '+rc, '신고 처리 · 채팅 메시지 삭제');
         alert('메시지를 삭제했습니다'); loadReports();
       }catch(e){ alert('삭제 실패: '+e.message); }
     });
@@ -366,6 +425,7 @@ function bindReportActions(){
       try{
         await remove(ref(db,'rooms/'+rc+'/places/'+pid));
         await update(ref(db,'reports/'+key), { handled:true, handledAt:Date.now() });
+        auditLog('콘텐츠삭제', '방 '+rc, '신고 처리 · 후보 장소 삭제');
         alert('후보를 삭제했습니다'); loadReports();
       }catch(e){ alert('삭제 실패: '+e.message); }
     });
@@ -601,6 +661,7 @@ function doPrivacySearch(){
     (u.email||'').toLowerCase().includes(q) ||
     (u.uid||'').toLowerCase().includes(q)
   );
+  if(hits.length) auditLog('열람', q, `개인정보 검색 · 결과 ${hits.length}건`);
   box.innerHTML = hits.length ? hits.map(u=>`
     <div class="item ${u.banned?'flag':''}">
       <div class="row">
@@ -634,6 +695,7 @@ function doPrivacySearch(){
       if(!confirm(next ? '이 이용자를 정지할까요?\n정지되면 앱 이용이 차단됩니다.' : '정지를 해제할까요?')) return;
       try{
         await update(ref(db,'users/'+uid), { banned: next, bannedAt: next?Date.now():null });
+        auditLog(next?'정지':'정지해제', (u.nickname||'')+' / '+(u.email||uid), next?'정책 위반에 따른 이용 정지':'이용 정지 해제');
         u.banned = next;
         doPrivacySearch();
         alert(next?'정지했습니다':'정지를 해제했습니다');
@@ -645,6 +707,8 @@ function doPrivacySearch(){
       const uid = b.dataset.pvDel;
       if(!confirm('이 이용자의 개인정보를 삭제할까요?\n\n· 계정 프로필과 알림함이 삭제됩니다\n· 되돌릴 수 없습니다\n\n(개인정보보호법상 삭제 요청 처리용)')) return;
       try{
+        const du = allUsers.find(x=>x.uid===uid);
+        await auditLog('삭제', (du&&du.nickname||'')+' / '+(du&&du.email||uid), '삭제권 대응 · 계정 프로필과 알림함 삭제');
         await remove(ref(db,'users/'+uid));
         await remove(ref(db,'notices/'+uid));
         alert('삭제했습니다. Firebase 콘솔 > Authentication 에서 로그인 계정도 함께 삭제해 주세요.');
@@ -659,6 +723,7 @@ function exportUserData(uid){
   const joined = allRooms.filter(r=> r.members.some(m=> m.id===uid))
     .map(r=>({ code:r.code, name:r.name, memberCount:r.memberCount }));
   const data = { 계정정보:u, 참여중인모임:joined, 내려받은시각:new Date().toISOString() };
+  auditLog('내보내기', (u.nickname||'')+' / '+(u.email||u.uid), '열람권 대응 · 개인정보 JSON 내려받기');
   const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
@@ -669,6 +734,7 @@ function exportUserData(uid){
 
 /* ---------- 상세 보기 ---------- */
 function openDetail(kind){
+  auditLog('열람', kind==='users'?'가입자 목록':'모임 목록', '관리자 대시보드 상세 조회');
   const box = $('detailBody');
   if(kind === 'users'){
     $('detailTitle').textContent = '👥 가입자 ' + allUsers.length + '명';
