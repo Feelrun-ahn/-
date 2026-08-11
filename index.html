@@ -1114,7 +1114,7 @@
     <div class="search-wrap collapsed" id="searchWrap">
       <div class="search-bar" id="searchBar">
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
-        <input id="searchInput" type="text" placeholder="장소·상호명 검색 (예: 스타벅스 홍대점)" autocomplete="off">
+        <input id="searchInput" maxlength="50" type="text" placeholder="장소·상호명 검색 (예: 스타벅스 홍대점)" autocomplete="off">
         <button class="search-clear hidden" id="searchClear">✕</button>
       </div>
       <div class="search-results" id="searchResults"></div>
@@ -1139,7 +1139,7 @@
     <h3>여기 어때요?</h3>
     <p class="sub">친구들이 투표할 수 있도록 후보로 올려요</p>
     <div class="field"><label>장소 이름</label><input id="placeName" type="text" placeholder="예: 홍대 스무디킹" maxlength="30"></div>
-    <div class="field"><label>한마디 (선택)</label><textarea id="placeMemo" rows="2" placeholder="추천 이유나 메모"></textarea></div>
+    <div class="field"><label>한마디 (선택)</label><textarea id="placeMemo" maxlength="200" rows="2" placeholder="추천 이유나 메모"></textarea></div>
     <div class="field">
       <label>사진 (선택)</label>
       <input id="placePhotoInput" type="file" accept="image/*" style="display:none;">
@@ -1342,6 +1342,11 @@
         <span class="dr-label" style="flex:1; text-align:left;">닉네임 변경</span>
         <span class="dr-chevron">›</span>
       </button>
+      <button class="drawer-item" id="menuBizBtn">
+        <span class="dr-icon">🤝</span>
+        <span class="dr-label" style="flex:1; text-align:left;">광고 · 협업 문의</span>
+        <span style="color:var(--faint);">›</span>
+      </button>
       <button class="drawer-item" id="menuFeedbackBtn">
         <span class="dr-icon">💌</span>
         <span class="dr-label" style="flex:1; text-align:left;">개발자에게 한마디</span>
@@ -1349,7 +1354,7 @@
       </button>
       <button class="drawer-item" id="menuHelpBtn">
         <span class="dr-icon">❓</span>
-        <span class="dr-label" style="flex:1; text-align:left;">도움말 · 앱 소개</span>
+        <span class="dr-label" style="flex:1; text-align:left;">사용 설명서</span>
         <span class="dr-chevron">›</span>
       </button>
     </div>
@@ -1382,7 +1387,7 @@
     <div class="sheet-grip"></div>
     <h3>개발자에게 한마디 💌</h3>
     <p class="sub">불편한 점, 버그, 원하는 기능 뭐든 좋아</p>
-    <div class="field"><textarea id="feedbackInput" rows="4" placeholder="여기에 적어줘..."></textarea></div>
+    <div class="field"><textarea id="feedbackInput" maxlength="1000" rows="4" placeholder="여기에 자유롭게 적어주세요..."></textarea></div>
     <div class="err" id="feedbackErr">내용을 입력해 주세요!</div>
     <div class="sheet-actions">
       <button class="btn btn-cancel" id="feedbackCancel">취소</button>
@@ -1427,6 +1432,144 @@
 </div>
 
 <!-- ============ 위치 공유 동의 ============ -->
+<div class="overlay" id="guideOverlay">
+  <div class="sheet">
+    <div class="sheet-grip"></div>
+    <h3>📖 사용 설명서</h3>
+    <p class="sub">어디가지?를 200% 활용하는 방법</p>
+    <div id="guideBody" style="max-height:62vh; overflow-y:auto; padding-right:2px;">
+
+      <div class="gd-sec">
+        <div class="gd-h">🗺️ 어디가지?는 어떤 앱인가요</div>
+        <p class="gd-p">친구들과 만날 때 <b>"어디서 볼까?"</b>를 정하느라 대화가 길어진 적 있죠? 어디가지?는 후보 장소를 지도에 올리고, 다 같이 투표해서 <b>한 번에 정하는</b> 앱이에요. 카톡에서 링크만 보내면 친구들이 바로 들어와요.</p>
+      </div>
+
+      <div class="gd-sec">
+        <div class="gd-h">1️⃣ 모임 만들기</div>
+        <p class="gd-p">홈에서 <b>새 모임 만들기</b>를 누르고 이름과 아이콘을 정하면 끝이에요. 만들면 <b>6자리 코드</b>가 생기는데, 이 코드나 공유 링크를 친구에게 보내면 돼요.</p>
+        <p class="gd-tip">💡 모임을 만든 사람이 <b>방장</b>이 돼요. 방장만 약속 날짜를 정하거나 장소를 확정할 수 있어요.</p>
+      </div>
+
+      <div class="gd-sec">
+        <div class="gd-h">2️⃣ 후보 장소 올리기</div>
+        <p class="gd-p">방법이 두 가지예요.<br>
+        · <b>지도를 꾹 눌러서</b> 원하는 위치에 핀 꽂기<br>
+        · <b>왼쪽 위 🔍 검색</b>으로 가게 이름 찾기</p>
+        <p class="gd-p">장소에 <b>메모</b>와 <b>사진</b>도 같이 올릴 수 있어요. "여기 파스타 맛있대!" 같은 한마디가 있으면 친구들이 고르기 쉬워요.</p>
+      </div>
+
+      <div class="gd-sec">
+        <div class="gd-h">3️⃣ 투표하기</div>
+        <p class="gd-p">후보마다 <b>👍 / 👎</b>를 누를 수 있어요. 둘은 동시에 선택할 수 없고, 같은 걸 다시 누르면 취소돼요. 추천을 많이 받은 곳이 <b>1위 뱃지</b>를 달고 목록 맨 위로 올라가요.</p>
+        <p class="gd-tip">💡 방장은 설정에서 <b>투표 마감 시간</b>을 정할 수 있어요. 마감되면 투표가 잠겨요.</p>
+      </div>
+
+      <div class="gd-sec">
+        <div class="gd-h">🧭 만나는 곳 vs 목적지</div>
+        <p class="gd-p">두 개는 <b>다른 개념</b>이에요.<br>
+        · <b>🧭 만나는 곳</b> — 다 같이 모이는 <b>집합 장소</b> (예: 오목교역 3번 출구)<br>
+        · <b>✅ 목적지</b> — 실제로 놀러 갈 <b>확정된 장소</b> (예: 팔각도)</p>
+        <p class="gd-p">후보 목록 위의 <b>중간지점</b> 버튼을 누르면, 멤버들의 현재 위치를 계산해서 <b>누구에게도 불리하지 않은 집합 장소</b>를 추천해줘요. 지하철역이나 백화점처럼 찾기 쉬운 곳으로 골라줘요.</p>
+        <p class="gd-tip">💡 추천을 받으려면 <b>2명 이상이 위치를 공유</b>해야 해요. 지도의 📡 버튼을 눌러주세요.</p>
+      </div>
+
+      <div class="gd-sec">
+        <div class="gd-h">📡 위치 공유</div>
+        <p class="gd-p">지도의 📡 버튼을 누르면 <b>같은 모임 멤버에게만</b> 내 위치가 보여요. 약속 당일에 "어디쯤 왔어?" 물어볼 필요가 없어져요.</p>
+        <p class="gd-p">끄면 실시간 표시는 멈추고, <b>마지막 위치</b>만 중간지점 계산용으로 6시간 남아요. 바로 지우고 싶으면 위치 공유 화면의 <b>내 위치 기록 삭제</b>를 눌러주세요.</p>
+        <p class="gd-tip">🔒 앱이 꺼져 있을 땐 위치를 <b>절대 수집하지 않아요.</b></p>
+      </div>
+
+      <div class="gd-sec">
+        <div class="gd-h">💬 채팅</div>
+        <p class="gd-p">방 안에서 바로 대화할 수 있어요. 메시지를 <b>길게 누르면</b> 이모지로 공감하거나 복사·삭제·신고할 수 있어요. 내 메시지 아래에는 <b>보냄 → N명 안 읽음 → 읽음</b>으로 상태가 표시돼요.</p>
+      </div>
+
+      <div class="gd-sec">
+        <div class="gd-h">🚩 신고와 차단</div>
+        <p class="gd-p">불쾌한 메시지나 후보가 있다면 <b>길게 눌러 신고</b>해 주세요. 특정 사용자를 <b>차단</b>하면 그 사람의 메시지와 후보가 더 이상 보이지 않아요. 차단 목록은 메뉴에서 관리할 수 있어요.</p>
+      </div>
+
+      <div class="gd-sec">
+        <div class="gd-h">✨ 알아두면 편한 것들</div>
+        <p class="gd-p">
+        · <b>패널을 위로 쓸어올리면</b> 후보 목록이 크게 보여요<br>
+        · <b>확정 장소를 누르면</b> 카카오맵 길찾기로 연결돼요<br>
+        · 약속일이 지난 모임은 <b>메뉴 → 지난 모임</b>에 추억으로 남아요<br>
+        · <b>다크 모드</b>를 켜면 지도까지 어두워져요<br>
+        · 홈 화면에 <b>앱으로 추가</b>하면 진짜 앱처럼 쓸 수 있어요</p>
+      </div>
+
+      <div class="gd-sec">
+        <div class="gd-h">❓ 자주 묻는 질문</div>
+        <p class="gd-p"><b>Q. 친구가 가입을 안 했어요</b><br>공유 링크로 들어오면 <b>닉네임만 입력하고</b> 바로 참여할 수 있어요. 다만 그 모임만 이용 가능해요.</p>
+        <p class="gd-p"><b>Q. 방을 나가고 싶어요</b><br>방 설정에서 <b>이 모임에서 나가기</b>를 누르세요. 방장은 나갈 수 없고, 방을 삭제해야 해요.</p>
+        <p class="gd-p"><b>Q. 비밀번호를 잊었어요</b><br>로그인 화면의 <b>비밀번호 찾기</b>를 누르면 가입한 이메일로 재설정 링크가 가요.</p>
+      </div>
+
+      <div class="gd-sec" style="border:none;">
+        <div class="gd-h">📬 도움이 더 필요하면</div>
+        <p class="gd-p">메뉴의 <b>개발자에게 한마디</b>로 언제든 연락 주세요. 버그 제보나 기능 제안도 대환영이에요!</p>
+      </div>
+    </div>
+    <div style="display:flex; gap:10px; margin-top:14px;">
+      <button class="btn btn-cancel" id="guideIntroBtn">앱 소개 다시 보기</button>
+      <button class="btn btn-save" id="guideClose">닫기</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="bizOverlay">
+  <div class="sheet">
+    <div class="sheet-grip"></div>
+    <h3>🤝 광고 · 협업 문의</h3>
+    <p class="sub">제휴, 광고, 기능 협업 등 무엇이든 편하게 남겨 주세요. 확인 후 회신드릴게요.</p>
+    <div class="field">
+      <label>문의 유형</label>
+      <select id="bizType" class="biz-select">
+        <option value="광고 문의">광고 문의</option>
+        <option value="제휴/협업">제휴 · 협업</option>
+        <option value="장소 제휴">장소(가게) 제휴</option>
+        <option value="언론/취재">언론 · 취재</option>
+        <option value="기타">기타</option>
+      </select>
+    </div>
+    <div class="field"><label>회사 / 단체명</label><input id="bizCompany" type="text" maxlength="40" placeholder="예: 어디가지 주식회사"></div>
+    <div class="field"><label>담당자 이름</label><input id="bizName" type="text" maxlength="20" placeholder="성함"></div>
+    <div class="field"><label>회신받을 이메일</label><input id="bizEmail" type="email" maxlength="60" placeholder="example@email.com"></div>
+    <div class="field"><label>문의 내용</label><textarea id="bizMsg" rows="4" maxlength="800" placeholder="내용을 자세히 적어주시면 더 빠르게 도와드릴 수 있어요"></textarea></div>
+    <div class="sheet-actions">
+      <button class="btn btn-cancel" id="bizCancel">취소</button>
+      <button class="btn btn-save" id="bizSend">문의 보내기</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="guestGateOverlay">
+  <div class="sheet">
+    <div class="sheet-grip"></div>
+    <div style="text-align:center; padding:6px 0 4px;">
+      <div style="font-size:2.4rem; margin-bottom:10px;">🔒</div>
+      <h3 style="margin-bottom:6px;">회원가입이 필요해요</h3>
+      <p class="sub" style="margin-bottom:16px;">
+        <b id="guestGateWhat">이 기능</b>은 회원만 이용할 수 있어요.<br>
+        지금은 초대받은 모임만 둘러볼 수 있어요.
+      </p>
+    </div>
+    <div class="mp-note" style="margin-bottom:14px;">
+      ✨ <b>회원가입하면 이런 게 좋아요</b><br>
+      · 내 모임을 여러 개 만들고 관리할 수 있어요<br>
+      · 어느 기기에서 접속해도 내 모임이 그대로 이어져요<br>
+      · 지난 모임 기록이 추억으로 남아요<br>
+      · 알림으로 새 소식을 바로 받아볼 수 있어요
+    </div>
+    <div class="sheet-actions">
+      <button class="btn btn-cancel" id="guestGateCancel">나중에</button>
+      <button class="btn btn-save" id="guestGateSignup">회원가입하기 →</button>
+    </div>
+  </div>
+</div>
+
 <div class="overlay" id="noticeOverlay">
   <div class="sheet">
     <div class="sheet-grip"></div>
@@ -1719,13 +1862,19 @@ function checkGuestMode(){
 // 게스트가 제한된 기능을 시도하면 로그인 유도
 function requireAccount(what){
   if(!isGuestMode) return true;
-  if(confirm(`${what}은(는) 로그인 후 이용할 수 있어요.\n지금 회원가입하시겠어요?`)){
-    try{ localStorage.removeItem(LS_GUEST); }catch(e){}
-    isGuestMode = false;
-    doLogout();
-    showScreen('signupScreen');
-  }
+  $('guestGateWhat').textContent = what;
+  $('guestGateOverlay').classList.add('show');
   return false;
+}
+function leaveGuestAndSignup(){
+  $('guestGateOverlay').classList.remove('show');
+  try{
+    localStorage.removeItem(LS_GUEST);
+    localStorage.removeItem(LS_GUEST_UID);
+  }catch(e){}
+  isGuestMode = false;
+  doLogout();
+  setTimeout(()=> showScreen('signupScreen'), 200);
 }
 function loadSession(){
   try{ return JSON.parse(localStorage.getItem(LS_SESSION) || 'null'); }catch(e){ return null; }
@@ -1924,7 +2073,7 @@ function retryRoomLoad(){
 
 /* ================= 뒤로가기(안드로이드/브라우저) 처리 ================= */
 let currentScreen = null;
-const OPEN_SHEET_IDS = ['addOverlay','settingsOverlay','shareOverlay','membersOverlay','detailOverlay','nicknameOverlay','feedbackOverlay','weatherOverlay','chatOverlay','locShareOverlay','pastOverlay','midpointOverlay','meetManageOverlay','msgActionOverlay','reportOverlay','blockedOverlay','noticeOverlay','announceOverlay','menuOverlay'];
+const OPEN_SHEET_IDS = ['addOverlay','settingsOverlay','shareOverlay','membersOverlay','detailOverlay','nicknameOverlay','feedbackOverlay','weatherOverlay','chatOverlay','locShareOverlay','pastOverlay','midpointOverlay','meetManageOverlay','msgActionOverlay','reportOverlay','blockedOverlay','guideOverlay','bizOverlay','guestGateOverlay','noticeOverlay','announceOverlay','menuOverlay'];
 function anyOpenSheet(){
   return OPEN_SHEET_IDS.find(id=>{ const el=$(id); return el && el.classList.contains('show'); }) || null;
 }
@@ -4566,10 +4715,14 @@ $('menuBtn').addEventListener('click', openAccountMenu);
 $('menuCloseBtn').addEventListener('click', closeAccountMenu);
 $('menuOverlay').addEventListener('click', (e)=>{ if(e.target.id==='menuOverlay') closeAccountMenu(); });
 $('menuLogoutBtn').addEventListener('click', doLogout);
-$('menuHelpBtn').addEventListener('click', ()=>{ closeAccountMenu(); replayOnboarding(); });
+$('menuHelpBtn').addEventListener('click', ()=>{ closeAccountMenu(); $('guideOverlay').classList.add('show'); });
+$('guideClose').addEventListener('click', ()=> $('guideOverlay').classList.remove('show'));
+$('guideIntroBtn').addEventListener('click', ()=>{ $('guideOverlay').classList.remove('show'); setTimeout(replayOnboarding, 220); });
+$('guideOverlay').addEventListener('click', (e)=>{ if(e.target.id==='guideOverlay') $('guideOverlay').classList.remove('show'); });
 $('menuNicknameBtn').addEventListener('click', ()=>{ closeAccountMenu(); openNicknameSheet(); });
 $('menuNoticeBtn').addEventListener('click', ()=>{
   closeAccountMenu();
+  if(!requireAccount('알림함')) return;
   renderNotices();
   $('noticeOverlay').classList.add('show');
   markNoticesRead();
@@ -4647,6 +4800,7 @@ $('menuDeleteAccBtn').addEventListener('click', async ()=>{
 });
 $('menuPastBtn').addEventListener('click', ()=>{
   closeAccountMenu();
+  if(!requireAccount('지난 모임 보기')) return;
   const past = getMyRooms().filter(isPastMeetup);
   const box = $('pastListBox');
   box.innerHTML = past.length
@@ -4659,6 +4813,36 @@ $('menuPastBtn').addEventListener('click', ()=>{
 });
 $('pastOverlay').addEventListener('click', (e)=>{ if(e.target.id==='pastOverlay') $('pastOverlay').classList.remove('show'); });
 $('menuFeedbackBtn').addEventListener('click', ()=>{ closeAccountMenu(); openFeedbackSheet(); });
+$('menuBizBtn').addEventListener('click', ()=>{ closeAccountMenu(); $('bizOverlay').classList.add('show'); });
+$('bizCancel').addEventListener('click', ()=> $('bizOverlay').classList.remove('show'));
+$('bizOverlay').addEventListener('click', (e)=>{ if(e.target.id==='bizOverlay') $('bizOverlay').classList.remove('show'); });
+$('bizSend').addEventListener('click', async ()=>{
+  const type = $('bizType').value;
+  const company = $('bizCompany').value.trim();
+  const name = $('bizName').value.trim();
+  const email = $('bizEmail').value.trim();
+  const msg = $('bizMsg').value.trim();
+  if(!name || !email || !msg){ showToast('이름·이메일·내용을 입력해 주세요'); return; }
+  if(!isEmailFormat(email)){ showToast('이메일 형식을 확인해 주세요'); return; }
+  $('bizSend').textContent = '보내는 중...';
+  try{
+    await set(ref(db,'inquiries/inq_'+Date.now()+'_'+Math.floor(Math.random()*1000)), {
+      type, company, name, email, message: msg,
+      fromNickname: myNickname || '', fromId: myId || '',
+      ts: Date.now(), handled: false
+    });
+    showToast('문의를 보냈어요! 확인 후 회신드릴게요 🤝');
+    ['bizCompany','bizName','bizEmail','bizMsg'].forEach(id=> $(id).value='');
+    $('bizOverlay').classList.remove('show');
+  }catch(e){
+    console.error(e);
+    showToast('보내지 못했어요 · 인터넷을 확인해 주세요');
+  }
+  $('bizSend').textContent = '문의 보내기';
+});
+$('guestGateCancel').addEventListener('click', ()=> $('guestGateOverlay').classList.remove('show'));
+$('guestGateSignup').addEventListener('click', leaveGuestAndSignup);
+$('guestGateOverlay').addEventListener('click', (e)=>{ if(e.target.id==='guestGateOverlay') $('guestGateOverlay').classList.remove('show'); });
 
 /* ---- 닉네임 변경 시트 ---- */
 $('nicknameCancel').addEventListener('click', closeNicknameSheet);
