@@ -64,6 +64,11 @@
   .detail-top{ display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; position:sticky; top:0; background:var(--bg); padding:6px 0 12px; }
   textarea{ width:100%; padding:13px 14px; border-radius:12px; border:1px solid var(--line); background:var(--card2); color:var(--text); font-family:inherit; font-size:0.92rem; outline:none; resize:vertical; }
   textarea:focus{ border-color:var(--accent); }
+  .nc-preview{ display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+  .nc-preview .pv{ position:relative; width:76px; height:76px; border-radius:11px; overflow:hidden; border:1px solid var(--line); }
+  .nc-preview .pv img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .nc-preview .pv button{ position:absolute; top:3px; right:3px; width:20px; height:20px; border:none; border-radius:50%; background:rgba(0,0,0,.65); color:#fff; font-size:0.7rem; cursor:pointer; line-height:1; }
+  input[type="file"]{ padding:10px; font-size:0.84rem; }
   .hint{ font-size:0.8rem; color:var(--soft); margin:0 0 12px; line-height:1.6; }
   .warnbox{ background:rgba(255,107,107,.12); border:1px solid var(--danger); color:#FFC9C9; border-radius:14px; padding:14px 16px; margin-bottom:16px; font-size:0.84rem; line-height:1.6; }
   .empty .big{ font-size:2.4rem; display:block; margin-bottom:10px; }
@@ -124,7 +129,13 @@
       <div class="item">
         <div class="row"><span class="badge">새 공지 작성</span></div>
         <div class="field"><label>제목</label><input id="ncTitle" type="text" placeholder="예: 새 기능이 추가되었어요"></div>
-        <div class="field"><label>내용</label><textarea id="ncBody" rows="4" placeholder="공지 내용을 입력하세요"></textarea></div>
+        <div class="field"><label>내용</label><textarea id="ncBody" rows="6" placeholder="공지 내용을 입력하세요 (줄바꿈 그대로 표시됩니다)"></textarea></div>
+        <div class="field">
+          <label>이미지 (선택 · 여러 장 가능)</label>
+          <input id="ncImages" type="file" accept="image/*" multiple>
+          <p class="hint" style="margin:8px 0 0;">이미지는 자동으로 용량이 줄어들어 저장됩니다. 한 장당 약 1MB 이하 권장.</p>
+          <div id="ncPreview" class="nc-preview"></div>
+        </div>
         <div class="acts">
           <button class="btn sm" id="ncSaveBtn">공지 등록</button>
           <button class="btn sm ghost hidden" id="ncCancelBtn">수정 취소</button>
@@ -477,7 +488,8 @@ function renderNotices(){
         <span class="when">${when(n.ts)}</span>
       </div>
       <div class="meta"><b style="color:var(--text); font-size:0.95rem;">${esc(n.title)}</b></div>
-      <div class="content">${esc(n.body)}</div>
+      ${(n.images&&n.images.length)?`<div class="nc-preview">${n.images.map(s=>`<div class="pv"><img src="${s}" alt=""></div>`).join('')}</div>`:''}
+      <div class="content" style="white-space:pre-wrap;">${esc(n.body)}</div>
       <div class="acts">
         <button class="btn sm ghost" data-nc-edit="${esc(n.key)}">수정</button>
         <button class="btn sm danger" data-nc-del="${esc(n.key)}">삭제</button>
@@ -488,6 +500,8 @@ function renderNotices(){
     b.addEventListener('click', ()=>{
       const n = notices.find(x=>x.key===b.dataset.ncEdit); if(!n) return;
       $('ncTitle').value = n.title; $('ncBody').value = n.body;
+      ncImageData = Array.isArray(n.images) ? n.images.slice() : [];
+      renderNcPreview();
       editingNoticeId = n.key;
       $('ncSaveBtn').textContent = '수정 저장';
       $('ncCancelBtn').classList.remove('hidden');
@@ -502,26 +516,74 @@ function renderNotices(){
     });
   });
 }
+let ncImageData = [];
+function renderNcPreview(){
+  const box = $('ncPreview');
+  box.innerHTML = ncImageData.map((src,i)=>
+    `<div class="pv"><img src="${src}" alt=""><button data-rm="${i}">✕</button></div>`).join('');
+  box.querySelectorAll('[data-rm]').forEach(b=>{
+    b.addEventListener('click', ()=>{ ncImageData.splice(parseInt(b.dataset.rm,10),1); renderNcPreview(); });
+  });
+}
+// 이미지를 캔버스로 줄여서 base64로 저장 (별도 스토리지 없이 DB에 보관)
+function shrinkImage(file, maxW){
+  return new Promise((resolve,reject)=>{
+    const fr = new FileReader();
+    fr.onload = ()=>{
+      const img = new Image();
+      img.onload = ()=>{
+        const scale = Math.min(1, maxW / img.width);
+        const w = Math.round(img.width*scale), hh = Math.round(img.height*scale);
+        const cv = document.createElement('canvas');
+        cv.width = w; cv.height = hh;
+        cv.getContext('2d').drawImage(img, 0, 0, w, hh);
+        resolve(cv.toDataURL('image/jpeg', 0.78));
+      };
+      img.onerror = reject;
+      img.src = fr.result;
+    };
+    fr.onerror = reject;
+    fr.readAsDataURL(file);
+  });
+}
+$('ncImages').addEventListener('change', async (e)=>{
+  const files = Array.from(e.target.files || []);
+  for(const f of files){
+    if(!f.type.startsWith('image/')) continue;
+    try{ ncImageData.push(await shrinkImage(f, 1100)); }
+    catch(err){ console.error(err); }
+  }
+  e.target.value = '';
+  renderNcPreview();
+});
+
 $('ncSaveBtn').addEventListener('click', async ()=>{
   const title = $('ncTitle').value.trim(), body = $('ncBody').value.trim();
   if(!title || !body){ alert('제목과 내용을 모두 입력해 주세요'); return; }
   const id = editingNoticeId || ('an_'+Date.now());
+  const payload = {
+    id, title, body,
+    images: ncImageData,
+    ts: editingNoticeId ? (notices.find(n=>n.key===editingNoticeId)?.ts || Date.now()) : Date.now(),
+    updatedAt: Date.now()
+  };
+  const size = JSON.stringify(payload).length;
+  if(size > 4_000_000){ alert('이미지 용량이 너무 큽니다. 장수를 줄이거나 작은 이미지를 사용해 주세요.'); return; }
+  $('ncSaveBtn').textContent = '저장 중...';
   try{
-    await set(ref(db,'announcements/'+id), {
-      id, title, body,
-      ts: editingNoticeId ? (notices.find(n=>n.key===editingNoticeId)?.ts || Date.now()) : Date.now(),
-      updatedAt: Date.now()
-    });
+    await set(ref(db,'announcements/'+id), payload);
     $('ncTitle').value=''; $('ncBody').value='';
+    ncImageData = []; renderNcPreview();
     editingNoticeId = null;
     $('ncSaveBtn').textContent = '공지 등록';
     $('ncCancelBtn').classList.add('hidden');
     loadNotices();
     alert('저장했습니다');
-  }catch(e){ alert('저장 실패: '+e.message); }
+  }catch(e){ $('ncSaveBtn').textContent='공지 등록'; alert('저장 실패: '+e.message); }
 });
 $('ncCancelBtn').addEventListener('click', ()=>{
   $('ncTitle').value=''; $('ncBody').value='';
+  ncImageData = []; renderNcPreview();
   editingNoticeId = null;
   $('ncSaveBtn').textContent = '공지 등록';
   $('ncCancelBtn').classList.add('hidden');
