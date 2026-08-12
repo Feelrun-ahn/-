@@ -463,6 +463,47 @@
   .ad-images img{ width:100%; border-radius:15px; display:block; cursor:zoom-in; }
   .ad-body{ font-size:0.92rem; color:var(--text); line-height:1.85; white-space:pre-wrap; word-break:break-word; }
 
+  .gd-wrap{ max-width:640px; margin:0 auto; }
+  .gd-hero{ text-align:center; padding:14px 16px 26px; }
+  .gd-hero-emoji{ font-size:2.8rem; margin-bottom:10px; }
+  .gd-hero-title{ font-size:1.32rem; font-weight:800; color:var(--text); line-height:1.5; margin-bottom:8px; letter-spacing:-0.02em; }
+  .gd-hero-sub{ font-size:0.84rem; color:var(--text-soft); line-height:1.6; }
+
+  .gd-steps{ display:flex; flex-direction:column; gap:10px; margin-bottom:22px; }
+  .gd-step{ display:flex; gap:13px; align-items:flex-start; background:var(--surface); border:1px solid var(--border); border-radius:17px; padding:14px 15px; }
+  .gd-num{ flex:none; width:27px; height:27px; border-radius:50%; background:linear-gradient(135deg,var(--accent),var(--accent-2)); color:#fff; font-size:0.82rem; font-weight:800; display:flex; align-items:center; justify-content:center; }
+  .gd-step-body{ flex:1; min-width:0; }
+  .gd-step-t{ font-size:0.92rem; font-weight:800; color:var(--text); margin-bottom:3px; }
+  .gd-step-d{ font-size:0.82rem; color:var(--text-soft); line-height:1.6; }
+
+  .gd-card{ background:var(--surface); border:1px solid var(--border); border-radius:19px; padding:17px 17px 18px; margin-bottom:12px; }
+  .gd-card.gd-accent{ border-color:var(--accent); background:linear-gradient(160deg,var(--accent-soft),var(--surface)); }
+  .gd-card-t{ font-size:0.98rem; font-weight:800; color:var(--text); margin-bottom:12px; letter-spacing:-0.01em; }
+
+  .gd-two{ display:flex; gap:9px; margin-bottom:12px; }
+  .gd-half{ flex:1; border-radius:14px; padding:13px 12px; }
+  .gd-half.orange{ background:rgba(247,147,30,0.13); border:1px solid rgba(247,147,30,0.45); }
+  .gd-half.green{ background:rgba(47,158,68,0.13); border:1px solid rgba(47,158,68,0.45); }
+  .gd-half-t{ font-size:0.85rem; font-weight:800; color:var(--text); margin-bottom:5px; }
+  .gd-half-d{ font-size:0.78rem; color:var(--text-soft); line-height:1.55; }
+  .gd-ex{ font-size:0.72rem; color:var(--faint); }
+
+  .gd-note{ font-size:0.84rem; color:var(--text); line-height:1.7; margin-bottom:10px; }
+  .gd-tip{ font-size:0.79rem; color:var(--text-soft); line-height:1.6; background:var(--line); border-radius:12px; padding:11px 13px; }
+
+  .gd-list{ margin:0; padding-left:18px; }
+  .gd-list li{ font-size:0.85rem; color:var(--text); line-height:1.75; margin-bottom:7px; }
+  .gd-list li:last-child{ margin-bottom:0; }
+  .gd-card .gd-list + .gd-tip{ margin-top:12px; }
+
+  .gd-qa{ padding:11px 0; border-bottom:1px solid var(--border); }
+  .gd-qa:last-child{ border-bottom:none; padding-bottom:0; }
+  .gd-q{ font-size:0.86rem; font-weight:800; color:var(--accent); margin-bottom:5px; }
+  .gd-q::before{ content:'Q. '; }
+  .gd-a{ font-size:0.82rem; color:var(--text-soft); line-height:1.65; }
+  .biz-select{ width:100%; border:2px solid var(--border); border-radius:13px; padding:12px 14px; font-size:0.95rem; font-family:inherit; font-weight:500; color:var(--text); background:var(--surface); outline:none; }
+  .hint{ font-size:0.8rem; color:var(--text-soft); line-height:1.6; }
+
   .dr-group{ font-size:0.72rem; font-weight:800; color:var(--faint); letter-spacing:0.02em; padding:16px 6px 7px; }
   .dr-group:first-child{ padding-top:4px; }
   .new-dot{ display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--danger); vertical-align:middle; margin-left:5px; }
@@ -5061,40 +5102,4 @@ if('serviceWorker' in navigator){
 
 </script>
 </body>
-</html>  .gd-wrap{ max-width:640px; margin:0 auto; }
-  .gd-hero{ text-align:center; padding:14px 16px 26px; }
-  .gd-hero-emoji{ font-size:2.8rem; margin-bottom:10px; }
-  .gd-hero-title{ font-size:1.32rem; font-weight:800; color:var(--text); line-height:1.5; margin-bottom:8px; letter-spacing:-0.02em; }
-  .gd-hero-sub{ font-size:0.84rem; color:var(--text-soft); line-height:1.6; }
-
-  .gd-steps{ display:flex; flex-direction:column; gap:10px; margin-bottom:22px; }
-  .gd-step{ display:flex; gap:13px; align-items:flex-start; background:var(--surface); border:1px solid var(--border); border-radius:17px; padding:14px 15px; }
-  .gd-num{ flex:none; width:27px; height:27px; border-radius:50%; background:linear-gradient(135deg,var(--accent),var(--accent-2)); color:#fff; font-size:0.82rem; font-weight:800; display:flex; align-items:center; justify-content:center; }
-  .gd-step-t{ font-size:0.92rem; font-weight:800; color:var(--text); margin-bottom:3px; }
-  .gd-step-d{ font-size:0.82rem; color:var(--text-soft); line-height:1.6; }
-
-  .gd-card{ background:var(--surface); border:1px solid var(--border); border-radius:19px; padding:17px 17px 18px; margin-bottom:12px; }
-  .gd-card.gd-accent{ border-color:var(--accent); background:linear-gradient(160deg,var(--accent-soft),var(--surface)); }
-  .gd-card-t{ font-size:0.98rem; font-weight:800; color:var(--text); margin-bottom:12px; letter-spacing:-0.01em; }
-
-  .gd-two{ display:flex; gap:9px; margin-bottom:12px; }
-  .gd-half{ flex:1; border-radius:14px; padding:13px 12px; }
-  .gd-half.orange{ background:rgba(247,147,30,0.13); border:1px solid rgba(247,147,30,0.45); }
-  .gd-half.green{ background:rgba(47,158,68,0.13); border:1px solid rgba(47,158,68,0.45); }
-  .gd-half-t{ font-size:0.85rem; font-weight:800; color:var(--text); margin-bottom:5px; }
-  .gd-half-d{ font-size:0.78rem; color:var(--text-soft); line-height:1.55; }
-  .gd-ex{ font-size:0.72rem; color:var(--faint); }
-
-  .gd-note{ font-size:0.84rem; color:var(--text); line-height:1.7; margin-bottom:10px; }
-  .gd-tip{ font-size:0.79rem; color:var(--text-soft); line-height:1.6; background:var(--line); border-radius:12px; padding:11px 13px; }
-
-  .gd-list{ margin:0; padding-left:18px; }
-  .gd-list li{ font-size:0.85rem; color:var(--text); line-height:1.75; margin-bottom:7px; }
-  .gd-list li:last-child{ margin-bottom:0; }
-  .gd-card .gd-list + .gd-tip{ margin-top:12px; }
-
-  .gd-qa{ padding:11px 0; border-bottom:1px solid var(--border); }
-  .gd-qa:last-child{ border-bottom:none; padding-bottom:0; }
-  .gd-q{ font-size:0.86rem; font-weight:800; color:var(--accent); margin-bottom:5px; }
-  .gd-q::before{ content:'Q. '; }
-  .gd-a{ font-size:0.82rem; color:var(--text-soft); line-height:1.65; }
+</html>
