@@ -403,10 +403,10 @@
   /* ===== account menu drawer ===== */
   .drawer-overlay{
     position:fixed; inset:0; z-index:4500; background:rgba(10,8,24,0);
-    pointer-events:none; transition:background 0.3s ease;
+    pointer-events:none; transition:background 0.3s ease, visibility 0s linear 0.38s;
     visibility:hidden; overflow:hidden;
   }
-  .drawer-overlay.show{ background:rgba(10,8,24,0.4); backdrop-filter:blur(3px); pointer-events:auto; visibility:visible; }
+  .drawer-overlay.show{ background:rgba(10,8,24,0.4); backdrop-filter:blur(3px); pointer-events:auto; visibility:visible; transition:background 0.3s ease, visibility 0s; }
   .drawer{
     position:absolute; top:0; right:0; bottom:0; width:82%; max-width:320px;
     background:var(--sheet-bg); backdrop-filter:blur(30px); -webkit-backdrop-filter:blur(30px);
@@ -428,6 +428,8 @@
     animation:fpIn 0.26s cubic-bezier(0.22,1,0.36,1);
   }
   .fullpage.hidden{ display:none; }
+  .fullpage.closing{ animation:fpOut 0.2s ease both; }
+  @keyframes fpOut{ to{ opacity:0; transform:translateX(24px); } }
   /* 공지 상세는 목록 위에 겹쳐 뜨도록 한 단계 높게 */
   #announceDetailPage{ z-index:6100; }
   @keyframes fpIn{ from{ opacity:0; transform:translateX(24px);} to{ opacity:1; transform:none;} }
@@ -626,6 +628,10 @@
   .search-clear{ border:none; background:#EEF0F4; color:#8E93A0; width:22px; height:22px; border-radius:50%; font-size:0.7rem; display:flex; align-items:center; justify-content:center; }
   .search-results{ margin-top:8px; background:var(--sheet-bg); backdrop-filter:blur(var(--blur)); -webkit-backdrop-filter:blur(var(--blur)); border:1px solid var(--border); border-radius:15px; box-shadow:var(--shadow-lg); max-height:44vh; overflow-y:auto; opacity:0; transform:translateY(-8px); pointer-events:none; transition:opacity 0.22s, transform 0.22s; }
   .search-results.show{ opacity:1; transform:translateY(0); pointer-events:auto; }
+  .sr-sort{ display:flex; gap:6px; padding:10px 12px 4px; }
+  .sr-sort button{ flex:none; border:1px solid var(--border); background:var(--surface); color:var(--text-soft); font-family:inherit; font-size:0.76rem; font-weight:700; padding:6px 12px; border-radius:10px; cursor:pointer; }
+  .sr-sort button.on{ background:var(--accent); border-color:var(--accent); color:#fff; }
+  .sr-hint{ padding:8px 14px 2px; font-size:0.76rem; color:var(--accent); font-weight:700; }
   .sr-item{ display:flex; align-items:flex-start; gap:11px; padding:12px 14px; border-bottom:1px solid var(--border); }
   .sr-item:last-child{ border-bottom:none; }
   .sr-item:active{ background:var(--accent-soft); }
@@ -775,8 +781,8 @@
   .empty .big{ font-size:1.5rem; display:block; margin-bottom:8px; }
 
   /* sheets / modals */
-  .overlay{ position:fixed; inset:0; background:rgba(15,17,23,0); display:flex; align-items:flex-end; justify-content:center; z-index:5000; pointer-events:none; transition:background 0.28s ease; visibility:hidden; overflow:hidden; }
-  .overlay.show{ background:rgba(15,17,23,0.44); pointer-events:auto; visibility:visible; }
+  .overlay{ position:fixed; inset:0; background:rgba(15,17,23,0); display:flex; align-items:flex-end; justify-content:center; z-index:5000; pointer-events:none; transition:background 0.28s ease, visibility 0s linear 0.36s; visibility:hidden; overflow:hidden; }
+  .overlay.show{ background:rgba(15,17,23,0.44); pointer-events:auto; visibility:visible; transition:background 0.28s ease, visibility 0s; }
   .sheet{ background:var(--sheet-bg); backdrop-filter:blur(var(--blur)); -webkit-backdrop-filter:blur(var(--blur)); border:1px solid var(--border); border-top:1px solid var(--border); width:100%; max-width:480px; border-radius:28px 28px 0 0; padding:12px 22px calc(22px + env(safe-area-inset-bottom)); transform:translateY(102%); transition:transform 0.34s cubic-bezier(0.32,0.72,0,1); max-height:88vh; overflow-y:auto; }
   .overlay.show .sheet{ transform:translateY(0); box-shadow:var(--shadow-lg); }
   .sheet-grip{ width:38px; height:4px; background:var(--border); border-radius:3px; margin:6px auto 16px; }
@@ -801,7 +807,7 @@
   .switch{ position:relative; width:46px; height:27px; flex-shrink:0; }
   .switch input{ opacity:0; width:0; height:0; }
   .slider{ position:absolute; inset:0; background:#D4D8E0; border-radius:20px; transition:0.25s; }
-  .slider::before{ content:""; position:absolute; width:21px; height:21px; left:3px; top:3px; background:#fff; border-radius:50%; transition:0.25s; box-shadow:0 2px 4px rgba(0,0,0,0.2); }
+  .slider::before{ content:""; position:absolute; width:21px; height:21px; left:3px; top:3px; background:#fff; border-radius:50%; transition:transform 0.3s cubic-bezier(0.34,1.4,0.6,1); box-shadow:0 2px 4px rgba(0,0,0,0.2); }
   .switch input:checked + .slider{ background:var(--accent); }
   .switch input:checked + .slider::before{ transform:translateX(19px); }
 
@@ -2298,9 +2304,9 @@ function pushBackState(){
 }
 window.addEventListener('popstate', ()=>{
   // 0) 풀페이지 화면이 열려 있으면 그것부터 닫기 (상세 → 목록 순)
-  if(!$('announceDetailPage').classList.contains('hidden')){ $('announceDetailPage').classList.add('hidden'); pushBackState(); return; }
-  if(!$('announcePage').classList.contains('hidden')){ $('announcePage').classList.add('hidden'); pushBackState(); return; }
-  if(!$('guidePage').classList.contains('hidden')){ $('guidePage').classList.add('hidden'); pushBackState(); return; }
+  if(!$('announceDetailPage').classList.contains('hidden')){ closeFullpage('announceDetailPage'); pushBackState(); return; }
+  if(!$('announcePage').classList.contains('hidden')){ closeFullpage('announcePage'); pushBackState(); return; }
+  if(!$('guidePage').classList.contains('hidden')){ closeFullpage('guidePage'); pushBackState(); return; }
   // 1) 열려있는 시트가 있으면 그것부터 닫기
   const sheet = anyOpenSheet();
   if(sheet){ closeSheetById(sheet); pushBackState(); return; }
@@ -4098,15 +4104,32 @@ function showResults(html){ const b=$('searchResults'); b.innerHTML=html; b.clas
 function hideResults(){ $('searchResults').classList.remove('show'); }
 
 let lastSearchResults = [];
-function renderResultItems(list){
-  // list: [{name, sub, lat, lng, dist, phone, category, kakaoUrl, address}]
+function renderResultItems(list, meta){
+  meta = meta || {};
   lastSearchResults = list;
-  showResults(list.map((it,i)=>`
+  const sortBar = `
+    <div class="sr-sort">
+      <button data-sort="accuracy" class="${searchSortMode==='accuracy'?'on':''}">정확도순</button>
+      <button data-sort="distance" class="${searchSortMode==='distance'?'on':''}">📍 거리순${meta.usedMyPos ? ' · 내 위치 기준' : ''}</button>
+    </div>`;
+  const fixedHint = meta.fixedQuery
+    ? `<div class="sr-hint">혹시 '${escapeHtml(meta.fixedQuery)}' 찾으셨나요? 비슷한 결과를 보여드려요</div>` : '';
+  showResults(sortBar + fixedHint + list.map((it,i)=>`
     <div class="sr-item" data-idx="${i}">
       <div class="sr-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 21s7-6.5 7-12a7 7 0 10-14 0c0 5.5 7 12 7 12z"/><circle cx="12" cy="9" r="2.3"/></svg></div>
       <div style="flex:1; min-width:0;"><div class="sr-main">${escapeHtml(it.name)}</div><div class="sr-sub">${escapeHtml(it.sub||'')}</div></div>
       ${typeof it.dist === 'number' ? `<div class="sr-dist">${it.dist < 1 ? Math.round(it.dist*1000)+'m' : it.dist.toFixed(1)+'km'}</div>` : ''}
     </div>`).join(''));
+  // 정렬 토글
+  document.querySelectorAll('.sr-sort button').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const mode = btn.dataset.sort;
+      if(mode === searchSortMode) return;
+      searchSortMode = mode;
+      if(lastQuery) runSearch(lastQuery);   // 거리순이면 안에서 현재 위치를 새로 잡는다
+    });
+  });
   document.querySelectorAll('.sr-item[data-idx]').forEach(el=>{
     el.addEventListener('click', ()=>{
       const it = lastSearchResults[parseInt(el.dataset.idx,10)];
@@ -4127,6 +4150,8 @@ function showNoResult(q){
 }
 let searchSeq = 0;
 let searchDebounce = null;
+let searchSortMode = 'accuracy';   // 'accuracy'(정확도순) | 'distance'(거리순)
+let lastQuery = '';
 function distKm(lat1, lng1, lat2, lng2){
   const R = 6371;
   const dLat = (lat2-lat1) * Math.PI/180;
@@ -4134,45 +4159,150 @@ function distKm(lat1, lng1, lat2, lng2){
   const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
-function runSearch(q){
+// 키워드 검색 한 번 (Promise) — status도 함께 돌려준다
+function kakaoSearchOnce(q, opts){
+  return new Promise((resolve)=>{
+    const ps = new kakao.maps.services.Places();
+    ps.keywordSearch(q, (data, status)=> resolve({ data: data||[], status }), opts);
+  });
+}
+/* ---- 한글 오타 보정 ----
+   '펄각도'(모음 오타), '팔걱도'(가운데 글자 오타)처럼 어디가 틀렸는지 모르는 오타에 대응:
+   ① 글자를 하나씩 빼고 검색 → 카카오가 부분일치로 '팔각도'를 찾아줌
+      (펄각도 → "각도" 검색 → 주변의 '팔각도'가 걸림)
+   ② 찾은 결과들은 원래 검색어와 자모(ㅍㅏㄹ…) 단위 유사도로 다시 정렬해
+      가장 비슷한 가게가 맨 위로 오게 한다 */
+function typoVariants(q){
+  const v = [];
+  const noSpace = q.replace(/\s+/g,'');
+  if(noSpace !== q) v.push(noSpace);
+  const s = noSpace;
+  // 글자 하나씩 빼기 (오타 위치를 모르니 전 위치 시도) — 뺀 결과가 2글자 이상일 때만
+  if(s.length >= 3){
+    for(let i=0;i<s.length;i++){
+      v.push(s.slice(0,i) + s.slice(i+1));
+    }
+  }
+  if(s.length >= 5) v.push(s.slice(0,-2));
+  return [...new Set(v)].filter(x=> x.length >= 2 && x !== q).slice(0, 6);
+}
+// 한글 음절 → 자모 문자열 분해 (팔 → ㅍㅏㄹ)
+const CHO = 'ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ';
+const JUNG = 'ㅏㅐㅑㅒㅓㅔㅕㅖㅗㅘㅙㅚㅛㅜㅝㅞㅟㅠㅡㅢㅣ';
+const JONG = ' ㄱㄲㄳㄴㄵㄶㄷㄹㄺㄻㄼㄽㄾㄿㅀㅁㅂㅄㅅㅆㅇㅈㅊㅋㅌㅍㅎ';
+function toJamo(str){
+  let out = '';
+  for(const ch of (str||'').replace(/\s+/g,'')){
+    const code = ch.charCodeAt(0) - 0xAC00;
+    if(code >= 0 && code < 11172){
+      out += CHO[Math.floor(code/588)] + JUNG[Math.floor((code%588)/28)];
+      const j = code % 28;
+      if(j) out += JONG[j];
+    } else out += ch;
+  }
+  return out;
+}
+// 자모 편집거리 기반 유사도 (0~1, 1이 동일)
+function jamoSimilarity(a, b){
+  const s = toJamo(a), t = toJamo(b);
+  const n = s.length, m = t.length;
+  if(!n || !m) return 0;
+  const dp = Array.from({length:n+1}, (_,i)=> [i, ...Array(m).fill(0)]);
+  for(let j=1;j<=m;j++) dp[0][j]=j;
+  for(let i=1;i<=n;i++) for(let j=1;j<=m;j++){
+    dp[i][j] = Math.min(dp[i-1][j]+1, dp[i][j-1]+1, dp[i-1][j-1] + (s[i-1]===t[j-1]?0:1));
+  }
+  return 1 - dp[n][m] / Math.max(n, m);
+}
+function mapResult(it, baseLat, baseLng){
+  const lat = parseFloat(it.y), lng = parseFloat(it.x);
+  return {
+    name: it.place_name,
+    sub: it.road_address_name || it.address_name || '',
+    lat, lng,
+    dist: it.distance ? (parseFloat(it.distance)/1000) : distKm(baseLat, baseLng, lat, lng),
+    phone: it.phone || '',
+    category: (it.category_name||'').split('>').pop().trim(),
+    kakaoUrl: it.place_url || '',
+    address: it.road_address_name || it.address_name || ''
+  };
+}
+async function runSearch(q){
   const mySeq = ++searchSeq;
+  lastQuery = q;
   showResults(`<div class="sr-msg"><span style="opacity:.6">🔍 '${escapeHtml(q)}' 검색 중...</span></div>`);
   if(typeof kakao === 'undefined' || !kakao.maps || !kakao.maps.services){
     showResults(`<div class="sr-msg">검색 기능을 불러오지 못했어요 · 새로고침해 주세요<br><span style="opacity:.7">또는 지도를 직접 눌러 핀을 꽂아도 돼요</span></div>`);
     return;
   }
-  const c = map.getCenter();
-  const cLat = c.lat(), cLng = c.lng();
-  const ps = new kakao.maps.services.Places();
-  ps.keywordSearch(q, (data, status)=>{
-    if(mySeq !== searchSeq) return; // 더 최신 검색이 있으면 버림
-    if(status === kakao.maps.services.Status.OK){
-      const list = (data||[]).map(it=>{
-        const lat = parseFloat(it.y), lng = parseFloat(it.x);
-        return {
-          name: it.place_name,
-          sub: it.road_address_name || it.address_name || '',
-          lat, lng,
-          dist: it.distance ? (parseFloat(it.distance)/1000) : distKm(cLat, cLng, lat, lng),
-          phone: it.phone || '',
-          category: (it.category_name||'').split('>').pop().trim(),
-          kakaoUrl: it.place_url || '',
-          address: it.road_address_name || it.address_name || ''
-        };
-      }).filter(x=> !isNaN(x.lat) && !isNaN(x.lng));
-      if(list.length) renderResultItems(list);
-      else showNoResult(q);
-    } else if(status === kakao.maps.services.Status.ZERO_RESULT){
-      showNoResult(q);
-    } else {
-      console.warn('카카오 검색 실패', status);
-      showResults(`<div class="sr-msg">검색을 불러오지 못했어요 · 인터넷을 확인해 주세요<br><span style="opacity:.7">또는 지도를 직접 눌러 핀을 꽂아도 돼요</span></div>`);
-    }
-  }, {
-    location: new kakao.maps.LatLng(cLat, cLng),
+  // 기준 좌표: 거리순이면 '지금 내 위치'를 새로 잡고, 정확도순이면 지도 중심
+  let baseLat, baseLng, usedMyPos = false;
+  if(searchSortMode === 'distance'){
+    const mine = await getMyCurrentPos();
+    if(mySeq !== searchSeq) return;
+    if(mine){ baseLat = mine.lat; baseLng = mine.lng; usedMyPos = true; cacheCoords(mine.lat, mine.lng); }
+  }
+  if(baseLat === undefined){
+    const c = map.getCenter(); baseLat = c.lat(); baseLng = c.lng();
+  }
+  const opts = {
+    location: new kakao.maps.LatLng(baseLat, baseLng),
     radius: 20000,
-    sort: kakao.maps.services.SortBy.DISTANCE
-  });
+    sort: searchSortMode === 'distance'
+      ? kakao.maps.services.SortBy.DISTANCE
+      : kakao.maps.services.SortBy.ACCURACY
+  };
+  let res = await kakaoSearchOnce(q, opts);
+  if(mySeq !== searchSeq) return;
+  let fixedQuery = null;
+  // 결과가 없으면: ① 반경 제한 없이 넓게 ② 오타 변형으로 재시도
+  if(res.status === kakao.maps.services.Status.ZERO_RESULT){
+    res = await kakaoSearchOnce(q, { sort: kakao.maps.services.SortBy.ACCURACY });
+    if(mySeq !== searchSeq) return;
+    if(res.status === kakao.maps.services.Status.ZERO_RESULT){
+      for(const alt of typoVariants(q)){
+        const r2 = await kakaoSearchOnce(alt, opts);
+        if(mySeq !== searchSeq) return;
+        if(r2.status === kakao.maps.services.Status.OK && r2.data.length){
+          // 원래 검색어와 자모 유사도가 어느 정도 되는 결과만 인정 (엉뚱한 매칭 방지)
+          const scored = r2.data
+            .map(it=> ({ it, sim: jamoSimilarity(q, it.place_name) }))
+            .filter(x=> x.sim >= 0.45)
+            .sort((x,y)=> y.sim - x.sim);
+          if(scored.length){
+            res = { status: r2.status, data: scored.map(x=> x.it) };
+            fixedQuery = scored[0].it.place_name; // 안내엔 실제 가게 이름을 보여줌
+            break;
+          }
+        }
+      }
+    }
+  }
+  if(res.status === kakao.maps.services.Status.OK && res.data.length){
+    let list = res.data.map(it=> mapResult(it, baseLat, baseLng)).filter(x=> !isNaN(x.lat) && !isNaN(x.lng));
+    if(searchSortMode === 'distance' && !fixedQuery) list.sort((a,b)=> a.dist - b.dist);
+    // '타임스퀘어'를 검색하면 입점 매장(아디다스 타임스퀘어점)이 건물 자체를 덮는 문제:
+    // 검색어를 이름에 품은 결과 중 이름이 짧은 것(= 건물·시설 자체)을 맨 위로 끌어올린다.
+    // 매장을 지우진 않으므로 '아디다스 타임스퀘어점'을 찾는 경우도 그대로 가능하다.
+    if(!fixedQuery && searchSortMode !== 'distance'){
+      const nq = q.replace(/\s+/g,'').toLowerCase();
+      const rank = (it)=>{
+        const nm = it.name.replace(/\s+/g,'').toLowerCase();
+        if(nm === nq) return 0;                            // 정확히 그 이름
+        if(nm.includes(nq)) return 1 + nm.length / 1000;   // 품고 있으면 짧은 이름부터 (건물 자체)
+        return 100;                                        // 나머지는 원래 순서 유지
+      };
+      list = list.map((it,i)=> ({ it, r: rank(it), i }))
+        .sort((a,b)=> (a.r - b.r) || (a.i - b.i))
+        .map(x=> x.it);
+    }
+    renderResultItems(list, { fixedQuery, usedMyPos });
+  } else if(res.status === kakao.maps.services.Status.ZERO_RESULT){
+    showNoResult(q);
+  } else {
+    console.warn('카카오 검색 실패', res.status);
+    showResults(`<div class="sr-msg">검색을 불러오지 못했어요 · 인터넷을 확인해 주세요<br><span style="opacity:.7">또는 지도를 직접 눌러 핀을 꽂아도 돼요</span></div>`);
+  }
 }
 function clearSearch(){ $('searchInput').value=''; $('searchClear').classList.add('hidden'); }
 function closeSearchBar(){ $('searchWrap').classList.add('collapsed'); }
@@ -5038,7 +5168,13 @@ $('menuCloseBtn').addEventListener('click', closeAccountMenu);
 $('menuOverlay').addEventListener('click', (e)=>{ if(e.target.id==='menuOverlay') closeAccountMenu(); });
 $('menuLogoutBtn').addEventListener('click', doLogout);
 $('menuHelpBtn').addEventListener('click', ()=>{ closeAccountMenu(); $('guidePage').classList.remove('hidden'); pushBackState(); });
-$('guideBack').addEventListener('click', ()=> $('guidePage').classList.add('hidden'));
+function closeFullpage(id){
+  const el = $(id);
+  if(!el || el.classList.contains('hidden')) return;
+  el.classList.add('closing');
+  setTimeout(()=>{ el.classList.remove('closing'); el.classList.add('hidden'); }, 190);
+}
+$('guideBack').addEventListener('click', ()=> closeFullpage('guidePage'));
 $('guideIntroBtn').addEventListener('click', ()=>{ $('guidePage').classList.add('hidden'); setTimeout(replayOnboarding, 220); });
 $('menuNicknameBtn').addEventListener('click', ()=>{ closeAccountMenu(); openNicknameSheet(); });
 $('menuNoticeBtn').addEventListener('click', ()=>{
@@ -5127,8 +5263,8 @@ function openAnnounceDetail(idx){
   $('announceDetailPage').classList.remove('hidden');
   pushBackState();
 }
-$('announceBack').addEventListener('click', ()=> $('announcePage').classList.add('hidden'));
-$('announceDetailBack').addEventListener('click', ()=> $('announceDetailPage').classList.add('hidden'));
+$('announceBack').addEventListener('click', ()=> closeFullpage('announcePage'));
+$('announceDetailBack').addEventListener('click', ()=> closeFullpage('announceDetailPage'));
 
 $('menuBlockedBtn').addEventListener('click', ()=>{
   closeAccountMenu();
