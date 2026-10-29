@@ -1944,10 +1944,62 @@ function saveMyRooms(list){
 }
 function rememberRoom(code, name, roomName, emoji){
   const list = getMyRooms().filter(r=> r.code !== code);
-  list.unshift({ code, name, roomName: roomName||'', emoji: emoji||'📍', savedAt: Date.now() });
+  const entry = { code, name, roomName: roomName||'', emoji: emoji||'📍', savedAt: Date.now() };
+  list.unshift(entry);
   saveMyRooms(list.slice(0, 30));
+  syncRoomToCloud(entry); // 다른 기기에서도 보이도록 서버에도 저장
 }
-function forgetRoom(code){ saveMyRooms(getMyRooms().filter(r=> r.code !== code)); }
+function forgetRoom(code){
+  saveMyRooms(getMyRooms().filter(r=> r.code !== code));
+  removeRoomFromCloud(code);
+}
+
+/* ---- 방 목록 클라우드 동기화 (기기 간 연동) ----
+   목록은 기기(localStorage)와 서버(users/{uid}/rooms) 양쪽에 저장한다.
+   로그인하면 서버 목록을 내려받아 합치므로, 어느 기기에서든 내 모임이 이어진다.
+   게스트는 기기별 익명 계정이라 동기화 의미가 없어 건너뛴다. */
+function syncRoomToCloud(entry){
+  if(!fbReady || !myId || isGuestMode || !entry || !entry.code) return;
+  try{
+    set(ref(db, 'users/'+myId+'/rooms/'+entry.code), entry).catch(()=>{});
+  }catch(e){}
+}
+function removeRoomFromCloud(code){
+  if(!fbReady || !myId || isGuestMode || !code) return;
+  try{
+    remove(ref(db, 'users/'+myId+'/rooms/'+code)).catch(()=>{});
+  }catch(e){}
+}
+async function pullRoomsFromCloud(){
+  if(!myId || isGuestMode) return;
+  try{
+    if(!fbReady){ const ok = await loadFirebase(); if(!ok) return; }
+    const authed = await ensureAuthReady();
+    if(!authed) return;
+    const snap = await get(child(ref(db), 'users/'+myId+'/rooms'));
+    const local = getMyRooms();
+    if(!snap.exists()){
+      // 서버가 비어 있으면(기존 사용자) 지금 기기의 목록을 올려 초기화
+      local.forEach(r=> syncRoomToCloud(r));
+      return;
+    }
+    const cloudList = Object.values(snap.val() || {}).filter(r=> r && r.code);
+    const merged = new Map();
+    cloudList.forEach(r=> merged.set(r.code, {
+      code: r.code, name: r.name || myNickname,
+      roomName: r.roomName || '', emoji: r.emoji || '📍',
+      savedAt: r.savedAt || 0
+    }));
+    local.forEach(r=> merged.set(r.code, Object.assign({}, merged.get(r.code) || {}, r)));
+    const list = Array.from(merged.values())
+      .sort((a,b)=> (b.savedAt||0) - (a.savedAt||0))
+      .slice(0, 30);
+    saveMyRooms(list);
+    // 이 기기에만 있던 방은 서버에도 올려 양방향을 맞춘다
+    list.forEach(r=>{ if(!cloudList.some(c=> c.code === r.code)) syncRoomToCloud(r); });
+    renderRoomList();
+  }catch(e){ console.warn('방 목록 동기화 실패', e); }
+}
 
 /* ================= utils ================= */
 const $ = (id)=> document.getElementById(id);
@@ -2311,7 +2363,8 @@ function typewriteText(el, text, speed){
 function goHomeOrLobby(){
   const gEl = $('homeGreeting');
   if(gEl) typewriteText(gEl, homeGreetingText());
-  renderRoomList();
+  renderRoomList();                 // 1) 기기에 저장된 목록 먼저 표시 (빠르게)
+  pullRoomsFromCloud();             // 2) 서버 목록을 내려받아 합치고 다시 그림
   showScreen('homeScreen');
 }
 function roomDdayText(meetAt){
