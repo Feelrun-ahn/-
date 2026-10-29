@@ -1614,7 +1614,7 @@
         <div class="gd-card-t">💬 채팅 · 신고</div>
         <ul class="gd-list">
           <li>메시지를 <b>길게 누르면</b> 공감·복사·삭제·신고</li>
-          <li>내 메시지에 <b>보냄 → N명 안 읽음 → 읽음</b> 표시</li>
+          <li>내 메시지에 <b>보냄 → N명 읽음 → 읽음</b> 표시</li>
           <li>불쾌한 사용자는 <b>차단</b>하면 글이 안 보여요</li>
         </ul>
       </div>
@@ -1958,24 +1958,30 @@ function forgetRoom(code){
    목록은 기기(localStorage)와 서버(users/{uid}/rooms) 양쪽에 저장한다.
    로그인하면 서버 목록을 내려받아 합치므로, 어느 기기에서든 내 모임이 이어진다.
    게스트는 기기별 익명 계정이라 동기화 의미가 없어 건너뛴다. */
+function isAnonUser(){
+  try{ return !!(auth && auth.currentUser && auth.currentUser.isAnonymous); }catch(e){ return isGuestMode; }
+}
 function syncRoomToCloud(entry){
-  if(!fbReady || !myId || isGuestMode || !entry || !entry.code) return;
+  if(!fbReady || !myId || !entry || !entry.code) return;
+  if(isAnonUser()) return; // 게스트(익명)만 제외
   try{
     set(ref(db, 'users/'+myId+'/rooms/'+entry.code), entry).catch(()=>{});
   }catch(e){}
 }
 function removeRoomFromCloud(code){
-  if(!fbReady || !myId || isGuestMode || !code) return;
+  if(!fbReady || !myId || !code) return;
+  if(isAnonUser()) return;
   try{
     remove(ref(db, 'users/'+myId+'/rooms/'+code)).catch(()=>{});
   }catch(e){}
 }
 async function pullRoomsFromCloud(){
-  if(!myId || isGuestMode) return;
+  if(!myId) return;
   try{
     if(!fbReady){ const ok = await loadFirebase(); if(!ok) return; }
     const authed = await ensureAuthReady();
     if(!authed) return;
+    if(isAnonUser()) return; // 진짜 게스트(익명 계정)일 때만 건너뜀
     const snap = await get(child(ref(db), 'users/'+myId+'/rooms'));
     const local = getMyRooms();
     if(!snap.exists()){
@@ -2057,13 +2063,18 @@ function requireAccount(what){
   $('guestGateOverlay').classList.add('show');
   return false;
 }
-function leaveGuestAndSignup(){
-  $('guestGateOverlay').classList.remove('show');
+// 정식 계정(이메일·Google)으로 로그인·가입하면 게스트 흔적을 완전히 지운다.
+// 안 지우면 앱이 계속 게스트 모드로 착각해서 방 목록 동기화가 건너뛰어진다.
+function clearGuestTraces(){
   try{
     localStorage.removeItem(LS_GUEST);
     localStorage.removeItem(LS_GUEST_UID);
   }catch(e){}
   isGuestMode = false;
+}
+function leaveGuestAndSignup(){
+  $('guestGateOverlay').classList.remove('show');
+  clearGuestTraces();
   doLogout();
   setTimeout(()=> showScreen('signupScreen'), 200);
 }
@@ -2176,6 +2187,7 @@ async function handleGoogleUser(user){
     if(snap.exists() && snap.val().nickname){ nickname = snap.val().nickname; }
     else{ await set(ref(db, 'users/'+user.uid), { nickname, provider:'google', email:user.email||'', createdAt:Date.now() }); }
   }catch(e){ console.warn('구글 프로필 동기화 실패', e); }
+  clearGuestTraces();
   applySession(user.uid, nickname);
   afterAuthSuccess();
 }
@@ -2537,6 +2549,7 @@ $('loginBtn').addEventListener('click', async ()=>{
   const res = await logIn(id, pw);
   $('loginBtn').textContent='로그인 →';
   if(!res.ok){ $('loginErr').textContent=res.msg; $('loginErr').style.display='block'; return; }
+  clearGuestTraces();
   applySession(res.uid, res.nickname);
   $('loginId').value=''; $('loginPw').value='';
   afterAuthSuccess();
@@ -2580,6 +2593,7 @@ $('signupBtn').addEventListener('click', async ()=>{
   const res = await signUp(email, pw, nickname, birth, guardianEmail);
   $('signupBtn').textContent='가입하고 시작하기 →';
   if(!res.ok){ showErr(res.msg); return; }
+  clearGuestTraces();
   applySession(res.uid, nickname);
   ['signupEmail','signupNickname','signupBirth','signupPw','signupPw2','guardianEmail'].forEach(id=>{ $(id).value=''; });
   $('guardianAgree').checked = false;
@@ -3058,7 +3072,12 @@ function subscribeChat(){
   const mRef = ref(db, 'rooms/'+roomCode+'/messages');
   unsubMessages = onValue(mRef, (snap)=>{
     const val = snap.val() || {};
-    const list = Object.values(val).sort((a,b)=> a.ts-b.ts);
+    // 키를 id로 복원하고, 삭제된 메시지에 읽음·공감 흔적만 남은 '유령 데이터'는 걸러낸다
+    // (유령이 끼면 빈 말풍선 + Invalid Date가 뜨고, 안읽음 배지도 영원히 안 꺼진다)
+    const list = Object.entries(val)
+      .map(([k,v])=> Object.assign({ id:k }, v))
+      .filter(m=> m && m.text && m.ts && m.authorId)
+      .sort((a,b)=> a.ts-b.ts);
     const prevLen = chatMessages.length;
     chatMessages = list;
     if(chatOpen){ renderChat(); markChatRead(); }
@@ -3087,7 +3106,7 @@ function markChatRead(){
   if(!roomCode || !myId) return;
   const key = safeKey(myId);
   chatMessages.forEach(m=>{
-    if(m.authorId !== myId && !((m.readBy||{})[key])){
+    if(m.id && m.ts && m.authorId && m.authorId !== myId && !((m.readBy||{})[key])){
       set(ref(db,'rooms/'+roomCode+'/messages/'+m.id+'/readBy/'+key), true).catch(()=>{});
     }
   });
@@ -3115,7 +3134,7 @@ function renderChat(){
   const nearBottom = (box.scrollHeight - box.scrollTop - box.clientHeight) < 120;
   box.innerHTML = visible.map(m=>{
     const mine = m.authorId === myId;
-    const time = new Date(m.ts).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});
+    const time = m.ts ? new Date(m.ts).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'}) : '';
     const reacts = m.reactions || {};
     const counts = {};
     Object.values(reacts).forEach(e=>{ counts[e] = (counts[e]||0)+1; });
@@ -3152,7 +3171,7 @@ function readStatusText(m){
   if(others === 0) return '보냄';
   if(readCnt === 0) return '보냄';
   if(readCnt >= others) return '읽음';
-  return `${others - readCnt}명 안 읽음`;
+  return `${readCnt}명 읽음`;
 }
 
 /* 길게 누르기 헬퍼 (터치/마우스 공용) */
