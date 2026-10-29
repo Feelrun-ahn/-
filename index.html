@@ -538,6 +538,19 @@
     display:flex; align-items:center; justify-content:center; border:2px solid var(--surface-strong);
   }
   .chat-sheet{ display:flex; flex-direction:column; height:78vh; max-height:78vh; padding-bottom:calc(14px + env(safe-area-inset-bottom)); }
+  .cmt-wrap{ margin-top:14px; border-top:1px solid var(--border); padding-top:12px; }
+  .cmt-title{ font-size:0.86rem; font-weight:800; color:var(--text); margin-bottom:8px; }
+  .cmt-list{ display:flex; flex-direction:column; gap:7px; max-height:180px; overflow-y:auto; margin-bottom:10px; }
+  .cmt-list:empty::after{ content:'아직 댓글이 없어요 · 첫 의견을 남겨보세요'; font-size:0.78rem; color:var(--faint); }
+  .cmt-item{ background:var(--line); border-radius:12px; padding:8px 11px; animation:msgIn 0.3s cubic-bezier(0.34,1.5,0.5,1) backwards; }
+  .cmt-head{ display:flex; align-items:center; gap:6px; margin-bottom:2px; }
+  .cmt-author{ font-size:0.72rem; font-weight:800; color:var(--accent); }
+  .cmt-time{ font-size:0.68rem; color:var(--faint); }
+  .cmt-del{ margin-left:auto; border:none; background:none; color:var(--faint); font-size:0.7rem; cursor:pointer; font-family:inherit; }
+  .cmt-text{ font-size:0.83rem; color:var(--text); line-height:1.5; word-break:break-word; }
+  .cmt-input-row{ display:flex; gap:8px; }
+  .cmt-input-row input{ flex:1; border:1.5px solid var(--border); border-radius:12px; padding:10px 13px; font-size:0.86rem; font-family:inherit; color:var(--text); background:var(--surface); outline:none; }
+  .cmt-input-row input:focus{ border-color:var(--accent); }
   .typing-bar{ flex:none; font-size:0.74rem; color:var(--text-soft); padding:4px 8px 2px; }
   .typing-bar .tb-dots{ display:inline-block; animation:tbBlink 1.1s infinite; }
   @keyframes tbBlink{ 0%,100%{ opacity:0.25; } 50%{ opacity:1; } }
@@ -1301,6 +1314,7 @@
           <div><b>투표</b> <span id="mvVote">-</span></div>
         </div>
       </div>
+      <button class="btn btn-cancel" style="width:100%; margin-bottom:10px;" id="memberNicknameBtn">✏️ 내 닉네임 변경</button>
       <button class="btn" style="width:100%; background:var(--line); color:var(--danger); font-weight:800; margin-bottom:10px;" id="exitRoomBtn">🚪 이 모임에서 나가기</button>
       <button class="btn btn-cancel" style="width:100%;" id="memberClose">닫기</button>
     </div>
@@ -1366,6 +1380,14 @@
     <div class="detail-actions">
       <button class="detail-react dislike" id="detailDislikeBtn"><span>👎</span><span id="detailDislikeCount">0</span></button>
       <button class="detail-react like" id="detailLikeBtn"><span>👍</span><span>투표 <span id="detailLikeCount">0</span></span></button>
+    </div>
+    <div class="cmt-wrap">
+      <div class="cmt-title">💬 댓글 <span id="cmtCount" style="color:var(--accent);"></span></div>
+      <div id="cmtList" class="cmt-list"></div>
+      <div class="cmt-input-row">
+        <input id="cmtInput" type="text" maxlength="200" placeholder="이 장소에 한마디...">
+        <button id="cmtSendBtn" class="chat-send">➤</button>
+      </div>
     </div>
     <button class="btn" id="detailDirectionsBtn" style="width:100%; margin-top:12px; background:#FEE500; color:#191919; font-weight:800;">🗺️ 카카오맵에서 보기</button>
     <div id="detailHostActions" class="hidden" style="margin-top:12px; display:flex; gap:10px;">
@@ -2819,14 +2841,49 @@ function timeAgo(ts){
   if(hr < 24) return hr+'시간 전';
   return Math.floor(hr/24)+'일 전';
 }
+function renderComments(p){
+  const box = $('cmtList');
+  const list = Object.entries(p.comments || {})
+    .map(([k,v])=> Object.assign({ id:k }, v))
+    .filter(c=> c && c.text && !isBlocked(c.authorId))
+    .sort((a,b)=> (a.ts||0)-(b.ts||0));
+  $('cmtCount').textContent = list.length ? list.length : '';
+  box.innerHTML = list.map(c=>`
+    <div class="cmt-item">
+      <div class="cmt-head">
+        <span class="cmt-author">${escapeHtml(c.author||'?')}</span>
+        <span class="cmt-time">${timeAgo(c.ts)}</span>
+        ${(c.authorId===myId || isHost()) ? `<button class="cmt-del" data-cmt-del="${c.id}">삭제</button>` : ''}
+      </div>
+      <div class="cmt-text">${escapeHtml(c.text)}</div>
+    </div>`).join('');
+  box.querySelectorAll('[data-cmt-del]').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      if(!confirm('이 댓글을 삭제할까요?')) return;
+      remove(ref(db,'rooms/'+roomCode+'/places/'+detailPlaceId+'/comments/'+b.dataset.cmtDel)).catch(()=>{});
+    });
+  });
+  box.scrollTop = box.scrollHeight;
+}
+async function sendComment(){
+  const input = $('cmtInput');
+  const text = input.value.trim();
+  if(!text || !detailPlaceId || !roomCode) return;
+  input.value = '';
+  const id = 'cm_'+Date.now()+'_'+Math.floor(Math.random()*1000);
+  try{
+    await set(ref(db,'rooms/'+roomCode+'/places/'+detailPlaceId+'/comments/'+id),
+      { author:myNickname, authorId:myId, text, ts:Date.now() });
+  }catch(e){ console.error(e); showToast('댓글을 남기지 못했어요 · 인터넷을 확인해 주세요'); }
+}
 function renderDetail(){
   const p = places[detailPlaceId];
   if(!p){ closeDetail(); return; }
-  const arr = Object.values(places).sort((a,b)=> countVotes(b)-countVotes(a));
-  const topVotes = countVotes(arr[0]);
+  const arr = Object.values(places).sort(rankCompare);
+  const topNet = netScore(arr[0]);
   const rankIndex = arr.findIndex(x=> x.id===p.id);
   const isFinal = room.finalPlaceId === p.id;
-  const isTop = topVotes>0 && countVotes(p)===topVotes && !isFinal;
+  const isTop = topNet>0 && netScore(p)===topNet && !isFinal;
 
   $('detailHero').style.background = `linear-gradient(135deg, ${p.color}, var(--accent-2))`;
   $('detailInitial').textContent = initials(p.author);
@@ -2844,6 +2901,7 @@ function renderDetail(){
   if(hasPhone){ $('detailPhone').textContent = p.phone; $('detailPhoneRow').href = 'tel:'+p.phone; }
   // 카카오맵 연결은 아래 노란 '카카오맵에서 보기' 버튼 하나로 통일
   $('detailDirectionsBtn').textContent = p.kakaoUrl ? '🗺️ 카카오맵에서 보기 (사진·영업시간·길찾기)' : '🗺️ 카카오맵에서 위치 보기';
+  renderComments(p);
 
   const rankEl = $('detailRank');
   if(isFinal){ rankEl.style.display='inline-block'; rankEl.textContent='✅ 확정된 장소'; }
@@ -2925,10 +2983,14 @@ async function saveNickname(){
   if(roomCode){
     try{ await update(ref(db, 'rooms/'+roomCode+'/members/'+safeKey(myId)), { nickname: nn }); }catch(e){}
   }
+  // 게스트가 바꾼 경우: 다음에 같은 폰으로 들어올 때 새 닉네임이 미리 채워지게
+  try{ if(isGuestMode) localStorage.setItem(LS_GUEST_NICK, nn); }catch(e){}
   closeNicknameSheet();
-  openAccountMenu();
+  if(nicknameFromMenu) openAccountMenu();
+  nicknameFromMenu = false;
   showToast('닉네임을 변경했어요!');
 }
+let nicknameFromMenu = false;
 
 function openFeedbackSheet(){
   $('feedbackInput').value = '';
@@ -3941,6 +4003,14 @@ function clearTempMarker(){ if(tempMarker){ tempMarker.setMap(null); tempMarker=
 /* ================= counts ================= */
 function countVotes(p){ return p.votes ? Object.keys(p.votes).length : 0; }
 function countDislikes(p){ return p.dislikes ? Object.keys(p.dislikes).length : 0; }
+// 순위 기준은 한 곳에서만 정의: 순추천(👍−👎) 높은 순 → 동점이면 👍 많은 순 → 👎 적은 순 → 먼저 올라온 순
+function netScore(p){ return countVotes(p) - countDislikes(p); }
+function rankCompare(a, b){
+  return (netScore(b) - netScore(a))
+      || (countVotes(b) - countVotes(a))
+      || (countDislikes(a) - countDislikes(b))
+      || ((a.ts||0) - (b.ts||0));
+}
 function has(obj, me){ return !!(obj && obj[me]); }
 
 /* ================= list ================= */
@@ -3956,12 +4026,13 @@ function renderList(){
     listEl.innerHTML = `<div class="empty"><span class="big">🗺️</span>아직 후보가 없어요<br>지도를 탭하거나 검색해서 첫 장소를 올려 보세요</div>`;
     return;
   }
-  const sorted = arr.sort((a,b)=> (countVotes(b)-countDislikes(b)) - (countVotes(a)-countDislikes(a)));
-  const topVotes = countVotes(sorted[0]);
+  const sorted = arr.sort(rankCompare);
+  const topNet = netScore(sorted[0]);
   const canVote = (room.allowVote || isHost()) && !voteClosed();
   listEl.innerHTML = sorted.map((p,i)=>{
     const isFinal = room.finalPlaceId === p.id;
-    const isTop = topVotes>0 && countVotes(p)===topVotes && !isFinal;
+    // 1위 뱃지는 정렬과 똑같은 기준: 순추천이 1등과 같고 양수일 때만
+    const isTop = topNet>0 && netScore(p)===topNet && !isFinal;
     const voted = has(p.votes, myId);
     const disliked = has(p.dislikes, myId);
     return `
@@ -4658,6 +4729,8 @@ $('detailConfirmBtn').addEventListener('click', ()=>{
   handleAction(isFinal ? 'unconfirm' : 'confirm', detailPlaceId);
 });
 $('detailDeleteBtn').addEventListener('click', ()=>{ if(!detailPlaceId) return; handleAction('del', detailPlaceId); closeDetail(); });
+$('cmtSendBtn').addEventListener('click', sendComment);
+$('cmtInput').addEventListener('keydown', (e)=>{ if(e.key==='Enter') sendComment(); });
 $('detailDirectionsBtn').addEventListener('click', ()=>{
   openKakaoPlace(places[detailPlaceId]);
 });
@@ -4764,6 +4837,7 @@ $('voteDeadlineToggle').addEventListener('change', (e)=>{
   $('voteDeadlineField').classList.toggle('hidden', !e.target.checked);
 });
 $('memberClose').addEventListener('click', closeSettings);
+$('memberNicknameBtn').addEventListener('click', ()=>{ closeSettings(); setTimeout(openNicknameSheet, 240); });
 $('exitRoomBtn').addEventListener('click', async ()=>{
   if(isHost()){ showToast('방장은 나갈 수 없어요 · 방을 삭제해 주세요'); return; }
   if(!confirm(`'${room.name}' 모임에서 나갈까요?\n다시 들어오려면 코드가 필요해요.`)) return;
@@ -5176,7 +5250,7 @@ function closeFullpage(id){
 }
 $('guideBack').addEventListener('click', ()=> closeFullpage('guidePage'));
 $('guideIntroBtn').addEventListener('click', ()=>{ $('guidePage').classList.add('hidden'); setTimeout(replayOnboarding, 220); });
-$('menuNicknameBtn').addEventListener('click', ()=>{ closeAccountMenu(); openNicknameSheet(); });
+$('menuNicknameBtn').addEventListener('click', ()=>{ closeAccountMenu(); nicknameFromMenu = true; openNicknameSheet(); });
 $('menuNoticeBtn').addEventListener('click', ()=>{
   closeAccountMenu();
   if(!requireAccount('알림함')) return;
